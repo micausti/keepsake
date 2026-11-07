@@ -6,6 +6,7 @@
   --accent: #2f5d50;
   --accent-contrast: #ffffff;
   --border: #e3ded3;
+  --danger: #b3261e;
 
   color-scheme: light dark;
   font-family:
@@ -23,6 +24,7 @@
     --accent: #7fb8a6;
     --accent-contrast: #0d1311;
     --border: #2c3531;
+    --danger: #f2b8b5;
   }
 }
 
@@ -43,21 +45,22 @@ body {
 .app {
   max-width: 40rem;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 1.5rem) 1rem calc(env(safe-area-inset-bottom) + 1.5rem);
+  padding: calc(env(safe-area-inset-top) + 1.5rem) 1rem calc(env(safe-area-inset-bottom) + 6rem);
 }
 
-.app-header h1 {
-  margin: 0;
+.page-header h1 {
+  margin: 0 0 0.25rem;
   font-size: 2rem;
   color: var(--accent);
 }
 
 .tagline {
-  margin: 0.25rem 0 1.5rem;
+  margin: 0 0 1.5rem;
   color: var(--muted);
 }
 
 .card {
+  margin-bottom: 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
@@ -84,7 +87,8 @@ body {
   position: fixed;
   left: 1rem;
   right: 1rem;
-  bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -114,4 +118,189 @@ button {
 button.secondary {
   background: transparent;
   color: var(--accent);
+}
+
+button.outline {
+  border: 1px solid var(--accent);
+}
+
+button.link {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+button:disabled {
+  opacity: 0.45;
+}
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  text-decoration: none;
+}
+
+/* --- Forms ---------------------------------------------------------------- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+input,
+select {
+  /* 16px+ stops iOS Safari zooming in on focus. */
+  font: inherit;
+  font-size: max(1rem, 16px);
+  min-height: 44px;
+  width: 100%;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.child-form {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+/* --- Lists and status ------------------------------------------------------ */
+
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.child-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.child-row:last-child {
+  border-bottom: 0;
+}
+
+.checklist {
+  padding-left: 0;
+  list-style: none;
+}
+
+.checklist li::before {
+  content: '○ ';
+  color: var(--muted);
+}
+
+.checklist li[data-done='true'] {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.checklist li[data-done='true']::before {
+  content: '✓ ';
+  color: var(--accent);
+}
+
+.saved-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+code {
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.success {
+  color: var(--accent);
+}
+
+.warning {
+  color: var(--danger);
+}
+
+/* --- Tab bar --------------------------------------------------------------- */
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.25rem 1rem calc(env(safe-area-inset-bottom) + 0.25rem);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.tab[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 600;
 }
