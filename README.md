@@ -17,16 +17,37 @@ offline-first web app (PWA) built for iPhone.
   allows scripts, styles and assets from the app's own origin only. The only
   other origin it can connect to is `https://api.anthropic.com`. See
   [`build/csp.ts`](build/csp.ts).
-- **Few dependencies.** Runtime dependencies are React and React DOM only
-  (Dexie arrives in Phase 1). Versions are pinned exactly, and install scripts
-  are disabled (see [`.npmrc`](.npmrc)).
+- **Few dependencies.** Runtime dependencies are React, Dexie (IndexedDB) with
+  its React hooks, and the official Anthropic SDK, which is loaded only when
+  the AI is used. Versions are pinned exactly, and install scripts are
+  disabled (see [`.npmrc`](.npmrc)).
+
+## Code layout
+
+| Path | What's there |
+| ---- | ------------ |
+| `src/domain/` | Item fields and option lists (categories, statuses, conditions, seasons, platforms), UK size scales, money helpers |
+| `src/db/` | Dexie database schema, children and settings storage, storage persistence |
+| `src/ai/` | Anthropic client (browser, user's own key) |
+| `src/pages/` | Home and Settings screens |
+| `src/ui/` | Hash router, tab bar, shared controls |
+| `build/` | Build-time Content Security Policy |
+
+Data model notes:
+
+- Money is stored as whole pence.
+- Option lists store stable ids (`hand_down`, `new_with_tags`, `2-3y`, `k6.5`);
+  labels can be reworded freely.
+- Conditions follow Vinted's scale, so listings need no translation later.
+- The database schema is versioned in `src/db/db.ts`. Never edit a released
+  version; add a new one with an upgrade function.
 
 ## Roadmap
 
 | Phase | Scope |
 | ----- | ----- |
-| **0** | Repo scaffold, CI/CD, deploy a placeholder PWA ← *you are here* |
-| 1 | Data model, Dexie, settings (API key, children, UK sizes) |
+| 0 | Repo scaffold, CI/CD, deploy a placeholder PWA ✓ |
+| **1** | Data model, Dexie, settings (API key, children, UK sizes) ← *you are here* |
 | 2 | Snap → AI auto-fill → review → save |
 | 3 | Browse/filter/search; item page with condition timeline and updates |
 | 4 | Gaps view by child/size/category; hand-me-down action |
@@ -73,6 +94,17 @@ up to date.
    to pass, and block force pushes and deletions.
 3. **Settings → Code security:** enable Dependabot alerts/security updates
    and secret scanning with push protection.
+
+## API key safety
+
+The key is kept in this site's IndexedDB on the phone. Two things to know:
+
+- Create a key just for Keepsake in the Claude Console and give it a monthly
+  spend limit, so a leaked key can't cost much.
+- Browsers separate stored data by *origin*, and every GitHub Pages site under
+  `micausti.github.io` shares one. Don't host other people's code on
+  `micausti.github.io/...`, since a page there could read Keepsake's data. A
+  custom domain would remove this concern.
 
 ## Installing on iPhone
 
