@@ -1,18 +1,42 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db.ts';
+import { recentItems } from '../db/items.ts';
 import { getSettings } from '../db/settings.ts';
-import { CLOTHING_SIZES, SHOE_SIZES, formatAge } from '../domain/sizes.ts';
+import { CATEGORY_LABELS, STATUS_LABELS, categoryById } from '../domain/options.ts';
+import { formatAge, sizeLabel } from '../domain/sizes.ts';
+import type { Child, Item } from '../domain/types.ts';
+import { BlobImage } from '../ui/BlobImage.tsx';
 import { hrefFor } from '../ui/router.ts';
 
-const label = (list: readonly { id: string; label: string }[], id?: string) =>
-  list.find((s) => s.id === id)?.label;
+function ItemRow({ item, children }: { item: Item; children: Child[] }) {
+  const thumb = useLiveQuery(
+    () => (item.coverPhotoId ? db.photos.get(item.coverPhotoId).then((p) => p?.thumb) : undefined),
+    [item.coverPhotoId],
+  );
+  const child = children.find((c) => c.id === item.childId);
+  const size = sizeLabel(categoryById(item.category).sizeSystem, item.size);
+  return (
+    <li className="item-row">
+      <BlobImage blob={thumb} alt="" className="item-thumb" />
+      <div>
+        <strong>{item.title}</strong>
+        <div className="muted">
+          {[CATEGORY_LABELS[item.category], size, child?.name, STATUS_LABELS[item.status]]
+            .filter(Boolean)
+            .join(' · ')}
+        </div>
+      </div>
+    </li>
+  );
+}
 
 export function HomePage() {
   const children = useLiveQuery(() => db.children.orderBy('name').toArray());
+  const items = useLiveQuery(() => recentItems(20));
   const itemCount = useLiveQuery(() => db.items.count());
   const settings = useLiveQuery(() => getSettings());
 
-  if (!children || itemCount === undefined || !settings) return null;
+  if (!children || !items || itemCount === undefined || !settings) return null;
 
   const setupDone = Boolean(settings.apiKey) && children.length > 0;
 
@@ -36,6 +60,10 @@ export function HomePage() {
         </section>
       )}
 
+      <a className="button wide add-cta" href={hrefFor('add')}>
+        ＋ Add an item
+      </a>
+
       {children.length > 0 && (
         <section className="card" aria-labelledby="children-heading">
           <h2 id="children-heading">Children</h2>
@@ -46,8 +74,8 @@ export function HomePage() {
                 <span className="muted">
                   {[
                     child.birthDate && formatAge(child.birthDate),
-                    label(CLOTHING_SIZES, child.clothingSize),
-                    child.shoeSize && `Shoes ${label(SHOE_SIZES, child.shoeSize)}`,
+                    sizeLabel('clothing', child.clothingSize),
+                    child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
                   ]
                     .filter(Boolean)
                     .join(' · ')}
@@ -59,12 +87,18 @@ export function HomePage() {
       )}
 
       <section className="card" aria-labelledby="items-heading">
-        <h2 id="items-heading">Items</h2>
-        <p>
-          {itemCount === 0
-            ? 'No items yet. Adding items with a photo arrives in the next update.'
-            : `${itemCount} item${itemCount === 1 ? '' : 's'}`}
-        </p>
+        <h2 id="items-heading">
+          {itemCount === 0 ? 'Items' : `Recently added (${itemCount} item${itemCount === 1 ? '' : 's'})`}
+        </h2>
+        {itemCount === 0 ? (
+          <p className="muted">No items yet. Tap “Add an item” to snap your first one.</p>
+        ) : (
+          <ul className="plain-list">
+            {items.map((item) => (
+              <ItemRow key={item.id} item={item} children={children} />
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );

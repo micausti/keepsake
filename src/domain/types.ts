@@ -51,6 +51,8 @@ export interface Photo {
   takenAt: Timestamp;
   /** JPEG, about 2000px on the long edge, with EXIF/GPS removed. */
   blob: Blob;
+  /** Small JPEG (~400px) for lists. */
+  thumb: Blob;
   width: number;
   height: number;
   createdAt: Timestamp;

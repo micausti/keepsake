@@ -28,8 +28,9 @@ offline-first web app (PWA) built for iPhone.
 | ---- | ------------ |
 | `src/domain/` | Item fields and option lists (categories, statuses, conditions, seasons, platforms), UK size scales, money helpers |
 | `src/db/` | Dexie database schema, children and settings storage, storage persistence |
-| `src/ai/` | Anthropic client (browser, user's own key) |
-| `src/pages/` | Home and Settings screens |
+| `src/ai/` | Anthropic client (browser, user's own key), item description prompt and output schema |
+| `src/photos/` | Photo resizing, EXIF stripping, date-taken reader |
+| `src/pages/` | Home, Add item and Settings screens |
 | `src/ui/` | Hash router, tab bar, shared controls |
 | `build/` | Build-time Content Security Policy |
 
@@ -47,8 +48,8 @@ Data model notes:
 | Phase | Scope |
 | ----- | ----- |
 | 0 | Repo scaffold, CI/CD, deploy a placeholder PWA ✓ |
-| **1** | Data model, Dexie, settings (API key, children, UK sizes) ← *you are here* |
-| 2 | Snap → AI auto-fill → review → save |
+| 1 | Data model, Dexie, settings (API key, children, UK sizes) ✓ |
+| **2** | Snap → AI auto-fill → review → save ← *you are here* |
 | 3 | Browse/filter/search; item page with condition timeline and updates |
 | 4 | Gaps view by child/size/category; hand-me-down action |
 | 5 | Sell mode: copy-ready listings (Vinted, eBay, Facebook Marketplace, Depop); share-sheet photos; track listed/sold |
@@ -94,6 +95,17 @@ up to date.
    to pass, and block force pushes and deletions.
 3. **Settings → Code security:** enable Dependabot alerts/security updates
    and secret scanning with push protection.
+
+## Photos and AI
+
+- Each photo is resized on the phone and re-encoded, which removes all EXIF
+  metadata including GPS location. Only the date taken is read first, for the
+  timeline.
+- Stored: a ~2000px JPEG and a ~400px thumbnail. Sent to Claude: a ~1000px
+  copy, which is never stored.
+- Claude returns structured fields (checked against a schema) and marks any it
+  guessed, so the form can flag them for checking. Requests run at low effort
+  to keep each item at roughly a penny. Nothing is saved until you tap Save.
 
 ## API key safety
 
