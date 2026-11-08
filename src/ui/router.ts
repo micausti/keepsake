@@ -4,7 +4,7 @@ import { useMemo, useSyncExternalStore } from 'react';
  * Minimal hash router. Hash URLs work on GitHub Pages (no server rewrites)
  * and offline, so no routing library is needed.
  */
-export type Page = 'home' | 'items' | 'add' | 'settings';
+export type Page = 'home' | 'items' | 'add' | 'gaps' | 'settings';
 
 export type Route =
   | { name: Page }
@@ -20,7 +20,7 @@ export function parseRoute(hash: string): Route {
     if (action === 'update') return { name: 'update', id };
     return { name: 'item', id };
   }
-  if (first === 'items' || first === 'add' || first === 'settings') return { name: first };
+  if (first === 'items' || first === 'add' || first === 'gaps' || first === 'settings') return { name: first };
   return { name: 'home' };
 }
 

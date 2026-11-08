@@ -1,7 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { db } from '../db/db.ts';
-import { deleteItem, setCoverPhoto, setStatus } from '../db/items.ts';
+import { deleteItem, handDown, setCoverPhoto, setStatus } from '../db/items.ts';
+import { nowAndNext } from '../domain/gaps.ts';
 import { formatDate } from '../domain/dates.ts';
 import { formatPence } from '../domain/money.ts';
 import {
@@ -15,11 +16,12 @@ import {
   type ItemStatus,
 } from '../domain/options.ts';
 import { sizeLabel } from '../domain/sizes.ts';
-import type { ItemEvent, Photo } from '../domain/types.ts';
+import type { Child, Item, ItemEvent, Photo } from '../domain/types.ts';
 import { BlobImage } from '../ui/BlobImage.tsx';
 import { hrefFor, itemHref, navigate } from '../ui/router.ts';
 
-function eventTitle(event: ItemEvent): string {
+function eventTitle(event: ItemEvent, children: Child[]): string {
+  const name = (id?: string) => children.find((c) => c.id === id)?.name ?? 'someone';
   switch (event.kind) {
     case 'created':
       return 'Added to Keepsake';
@@ -31,10 +33,15 @@ function eventTitle(event: ItemEvent): string {
       return 'New photos';
     case 'note':
       return 'Note';
+    case 'handdown':
+      return event.fromChildId
+        ? `Handed down from ${name(event.fromChildId)} to ${name(event.toChildId)}`
+        : `Given to ${name(event.toChildId)}`;
   }
 }
 
-function Timeline({ events, photos, onOpen }: { events: ItemEvent[]; photos: Photo[]; onOpen: (p: Photo) => void }) {
+function Timeline(props: { events: ItemEvent[]; photos: Photo[]; children: Child[]; onOpen: (p: Photo) => void }) {
+  const { events, photos, onOpen } = props;
   const byId = new Map(photos.map((p) => [p.id, p]));
   return (
     <ol className="timeline">
@@ -44,7 +51,7 @@ function Timeline({ events, photos, onOpen }: { events: ItemEvent[]; photos: Pho
           <li key={event.id} className="timeline-entry">
             <div className="timeline-date">{formatDate(event.at)}</div>
             <div>
-              <strong>{eventTitle(event)}</strong>
+              <strong>{eventTitle(event, props.children)}</strong>
               {event.kind === 'created' && event.condition && (
                 <div className="muted">Condition: {CONDITION_LABELS[event.condition]}</div>
               )}
@@ -63,6 +70,54 @@ function Timeline({ events, photos, onOpen }: { events: ItemEvent[]; photos: Pho
         );
       })}
     </ol>
+  );
+}
+
+/** "Hand down to …" for items that could pass to another child. */
+function HandDown({ item, children }: { item: Item; children: Child[] }) {
+  const others = children.filter((c) => c.id !== item.childId);
+  const [to, setTo] = useState('');
+  if (!others.length || item.status === 'sold' || item.status === 'donated') return null;
+
+  const system = categoryById(item.category).sizeSystem;
+  const fitsNow = (child: Child) =>
+    (system === 'clothing' || system === 'shoes') && nowAndNext(child, system)[0]?.id === item.size;
+  const give = async (child: Child) => {
+    const now = fitsNow(child);
+    await handDown(item.id, child.id, now);
+    setTo('');
+  };
+
+  if (others.length === 1) {
+    const [only] = others as [Child];
+    return (
+      <button type="button" className="secondary outline wide" onClick={() => void give(only)}>
+        {item.childId ? 'Hand down' : 'Give'} to {only.name}
+      </button>
+    );
+  }
+  return (
+    <div className="input-row hand-down">
+      <select aria-label="Hand down to" value={to} onChange={(e) => setTo(e.target.value)}>
+        <option value="">{item.childId ? 'Hand down to…' : 'Give to…'}</option>
+        {others.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="secondary outline"
+        disabled={!to}
+        onClick={() => {
+          const child = others.find((c) => c.id === to);
+          if (child) void give(child);
+        }}
+      >
+        Hand down
+      </button>
+    </div>
   );
 }
 
@@ -187,6 +242,7 @@ export function ItemPage({ id }: { id: string }) {
             ))}
           </select>
         </div>
+        <HandDown item={item} children={children} />
         <div className="button-row action-row">
           <a className="button" href={itemHref(item.id, 'update')}>
             Add update
@@ -214,7 +270,7 @@ export function ItemPage({ id }: { id: string }) {
 
       <section className="card" aria-labelledby="timeline-heading">
         <h2 id="timeline-heading">Timeline</h2>
-        <Timeline events={events} photos={photos} onOpen={setLightbox} />
+        <Timeline events={events} photos={photos} children={children} onOpen={setLightbox} />
       </section>
 
       <button type="button" className="secondary danger wide" onClick={() => void remove()}>

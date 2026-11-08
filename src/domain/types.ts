@@ -63,9 +63,12 @@ export interface ItemEvent {
   id: string;
   itemId: string;
   at: Timestamp;
-  kind: 'created' | 'condition' | 'status' | 'note' | 'photos';
+  kind: 'created' | 'condition' | 'status' | 'note' | 'photos' | 'handdown';
   condition?: Condition;
   status?: ItemStatus;
   note?: string;
   photoIds?: string[];
+  /** For hand-downs: who it passed from and to. */
+  fromChildId?: string;
+  toChildId?: string;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AddItemPage } from './pages/AddItemPage.tsx';
 import { BrowsePage } from './pages/BrowsePage.tsx';
 import { EditItemPage } from './pages/EditItemPage.tsx';
+import { GapsPage } from './pages/GapsPage.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { ItemPage } from './pages/ItemPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
@@ -21,6 +22,8 @@ function Screen({ route }: { route: Route }) {
       return <UpdateItemPage id={route.id} />;
     case 'add':
       return <AddItemPage />;
+    case 'gaps':
+      return <GapsPage />;
     case 'settings':
       return <SettingsPage />;
     case 'home':

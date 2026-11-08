@@ -27,6 +27,12 @@ const GROUPS = [...new Set(CATEGORIES.map((c) => c.group))];
 let rememberedQuery: ItemQuery = DEFAULT_QUERY;
 let rememberedOpen = false;
 
+/** Opens the Items tab with these filters set (used by the Gaps screen). */
+export function presetBrowse(patch: Partial<ItemQuery>): void {
+  rememberedQuery = { ...DEFAULT_QUERY, ...patch };
+  rememberedOpen = true;
+}
+
 function Select(props: {
   id: string;
   label: string;

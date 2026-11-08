@@ -4,6 +4,7 @@ const TABS: { page: Page; label: string; icon: string }[] = [
   { page: 'home', label: 'Home', icon: '⌂' },
   { page: 'items', label: 'Items', icon: '☰' },
   { page: 'add', label: 'Add', icon: '＋' },
+  { page: 'gaps', label: 'Gaps', icon: '◫' },
   { page: 'settings', label: 'Settings', icon: '⚙' },
 ];
 

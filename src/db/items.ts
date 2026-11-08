@@ -222,3 +222,36 @@ export async function deleteItem(itemId: string, database: KeepsakeDB = db): Pro
     await database.items.delete(itemId);
   });
 }
+
+/**
+ * Passes an item to another child. It becomes "in use" if it fits them now,
+ * otherwise it goes into storage until they grow into it.
+ */
+export async function handDown(
+  itemId: string,
+  toChildId: string,
+  fitsNow: boolean,
+  database: KeepsakeDB = db,
+): Promise<void> {
+  const timestamp = now();
+  await database.transaction('rw', database.items, database.events, async () => {
+    const item = await requireItem(itemId, database);
+    if (item.childId === toChildId) return;
+    const status: ItemStatus = fitsNow ? 'in_use' : 'storage';
+    await database.items.put({ ...item, childId: toChildId, status, updatedAt: timestamp });
+    await database.events.add({
+      id: newId(),
+      itemId,
+      at: timestamp,
+      kind: 'handdown',
+      fromChildId: item.childId,
+      toChildId,
+      status,
+    });
+  });
+}
+
+/** Marks several items as outgrown at once, each with a timeline entry. */
+export async function markOutgrown(itemIds: string[], database: KeepsakeDB = db): Promise<void> {
+  for (const id of itemIds) await setStatus(id, 'outgrown', database);
+}
