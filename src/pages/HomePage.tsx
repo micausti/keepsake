@@ -2,37 +2,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db.ts';
 import { recentItems } from '../db/items.ts';
 import { getSettings } from '../db/settings.ts';
-import { CATEGORY_LABELS, STATUS_LABELS, categoryById } from '../domain/options.ts';
 import { formatAge, sizeLabel } from '../domain/sizes.ts';
-import type { Child, Item } from '../domain/types.ts';
-import { BlobImage } from '../ui/BlobImage.tsx';
+import { ItemRow } from '../ui/ItemRow.tsx';
 import { hrefFor } from '../ui/router.ts';
-
-function ItemRow({ item, children }: { item: Item; children: Child[] }) {
-  const thumb = useLiveQuery(
-    () => (item.coverPhotoId ? db.photos.get(item.coverPhotoId).then((p) => p?.thumb) : undefined),
-    [item.coverPhotoId],
-  );
-  const child = children.find((c) => c.id === item.childId);
-  const size = sizeLabel(categoryById(item.category).sizeSystem, item.size);
-  return (
-    <li className="item-row">
-      <BlobImage blob={thumb} alt="" className="item-thumb" />
-      <div>
-        <strong>{item.title}</strong>
-        <div className="muted">
-          {[CATEGORY_LABELS[item.category], size, child?.name, STATUS_LABELS[item.status]]
-            .filter(Boolean)
-            .join(' · ')}
-        </div>
-      </div>
-    </li>
-  );
-}
 
 export function HomePage() {
   const children = useLiveQuery(() => db.children.orderBy('name').toArray());
-  const items = useLiveQuery(() => recentItems(20));
+  const items = useLiveQuery(() => recentItems(5));
   const itemCount = useLiveQuery(() => db.items.count());
   const settings = useLiveQuery(() => getSettings());
 
@@ -93,11 +69,16 @@ export function HomePage() {
         {itemCount === 0 ? (
           <p className="muted">No items yet. Tap “Add an item” to snap your first one.</p>
         ) : (
-          <ul className="plain-list">
-            {items.map((item) => (
-              <ItemRow key={item.id} item={item} children={children} />
-            ))}
-          </ul>
+          <>
+            <ul className="plain-list">
+              {items.slice(0, 5).map((item) => (
+                <ItemRow key={item.id} item={item} children={children} />
+              ))}
+            </ul>
+            <a className="button secondary-link" href={hrefFor('items')}>
+              See all items ›
+            </a>
+          </>
         )}
       </section>
     </>

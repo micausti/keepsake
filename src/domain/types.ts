@@ -63,7 +63,7 @@ export interface ItemEvent {
   id: string;
   itemId: string;
   at: Timestamp;
-  kind: 'created' | 'condition' | 'status' | 'note';
+  kind: 'created' | 'condition' | 'status' | 'note' | 'photos';
   condition?: Condition;
   status?: ItemStatus;
   note?: string;

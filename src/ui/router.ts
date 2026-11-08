@@ -1,18 +1,41 @@
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 /**
  * Minimal hash router. Hash URLs work on GitHub Pages (no server rewrites)
  * and offline, so no routing library is needed.
  */
-export type Route = 'home' | 'add' | 'settings';
+export type Page = 'home' | 'items' | 'add' | 'settings';
 
-const ROUTES: Record<string, Route> = { '': 'home', '#/': 'home', '#/add': 'add', '#/settings': 'settings' };
+export type Route =
+  | { name: Page }
+  | { name: 'item'; id: string }
+  | { name: 'edit'; id: string }
+  | { name: 'update'; id: string };
 
 export function parseRoute(hash: string): Route {
-  return ROUTES[hash] ?? 'home';
+  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  const [first, id, action] = parts;
+  if (first === 'item' && id) {
+    if (action === 'edit') return { name: 'edit', id };
+    if (action === 'update') return { name: 'update', id };
+    return { name: 'item', id };
+  }
+  if (first === 'items' || first === 'add' || first === 'settings') return { name: first };
+  return { name: 'home' };
 }
 
-export const hrefFor = (route: Route): string => (route === 'home' ? '#/' : `#/${route}`);
+export const hrefFor = (page: Page): string => (page === 'home' ? '#/' : `#/${page}`);
+export const itemHref = (id: string, action?: 'edit' | 'update'): string =>
+  `#/item/${encodeURIComponent(id)}${action ? `/${action}` : ''}`;
+
+export function navigate(href: string, { replace = false } = {}): void {
+  if (replace) {
+    window.history.replaceState(null, '', href);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  } else {
+    window.location.hash = href;
+  }
+}
 
 function subscribe(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -20,5 +43,11 @@ function subscribe(onChange: () => void) {
 }
 
 export function useRoute(): Route {
-  return useSyncExternalStore(subscribe, () => parseRoute(window.location.hash));
+  const hash = useSyncExternalStore(subscribe, () => window.location.hash);
+  return useMemo(() => parseRoute(hash), [hash]);
+}
+
+/** The tab a route belongs to, for highlighting the tab bar. */
+export function tabFor(route: Route): Page {
+  return route.name === 'item' || route.name === 'edit' || route.name === 'update' ? 'items' : route.name;
 }

@@ -49,3 +49,18 @@ describe('App', () => {
     expect((await db.settings.get('apiKey'))?.value).toBe(key);
   });
 });
+
+describe('Tab bar', () => {
+  it('starts Add afresh when tapped again after saving', async () => {
+    render(<App />);
+    await goTo('#/add');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fill in myself' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Hat' } });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'accessories' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save item' }));
+    await screen.findByRole('heading', { name: 'Saved' });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Add' }));
+    expect(await screen.findByRole('heading', { name: 'Add an item' })).toBeDefined();
+  });
+});
