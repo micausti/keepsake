@@ -4,9 +4,9 @@ import { useSyncExternalStore } from 'react';
  * Minimal hash router. Hash URLs work on GitHub Pages (no server rewrites)
  * and offline, so no routing library is needed.
  */
-export type Route = 'home' | 'settings';
+export type Route = 'home' | 'add' | 'settings';
 
-const ROUTES: Record<string, Route> = { '': 'home', '#/': 'home', '#/settings': 'settings' };
+const ROUTES: Record<string, Route> = { '': 'home', '#/': 'home', '#/add': 'add', '#/settings': 'settings' };
 
 export function parseRoute(hash: string): Route {
   return ROUTES[hash] ?? 'home';

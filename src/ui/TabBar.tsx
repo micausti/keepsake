@@ -2,6 +2,7 @@ import { hrefFor, type Route } from './router.ts';
 
 const TABS: { route: Route; label: string; icon: string }[] = [
   { route: 'home', label: 'Home', icon: '⌂' },
+  { route: 'add', label: 'Add', icon: '＋' },
   { route: 'settings', label: 'Settings', icon: '⚙' },
 ];
 
