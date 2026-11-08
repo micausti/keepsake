@@ -5,6 +5,7 @@ import { EditItemPage } from './pages/EditItemPage.tsx';
 import { GapsPage } from './pages/GapsPage.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { ItemPage } from './pages/ItemPage.tsx';
+import { SellPage } from './pages/SellPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { UpdateItemPage } from './pages/UpdateItemPage.tsx';
 import { TabBar } from './ui/TabBar.tsx';
@@ -20,6 +21,8 @@ function Screen({ route }: { route: Route }) {
       return <EditItemPage id={route.id} />;
     case 'update':
       return <UpdateItemPage id={route.id} />;
+    case 'sell':
+      return <SellPage id={route.id} />;
     case 'add':
       return <AddItemPage />;
     case 'gaps':

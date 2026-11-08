@@ -36,8 +36,14 @@ export interface Item {
   status: ItemStatus;
   storageLocation?: string;
   pricePaidPence?: number;
+  /** Asking price while listed. */
+  listPricePence?: number;
+  /** Where it's currently listed. */
+  listedOn?: Platform[];
+  listedAt?: Timestamp;
   salePricePence?: number;
   salePlatform?: Platform;
+  soldAt?: Timestamp;
   coverPhotoId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

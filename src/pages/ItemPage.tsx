@@ -178,6 +178,8 @@ export function ItemPage({ id }: { id: string }) {
     ['Material', item.material],
     ['Storage location', item.storageLocation],
     ['Price paid', item.pricePaidPence !== undefined ? formatPence(item.pricePaidPence) : undefined],
+    ['Listed on', item.status === 'listed' ? item.listedOn?.map((p) => PLATFORM_LABELS[p]).join(', ') : undefined],
+    ['Asking price', item.status === 'listed' && item.listPricePence !== undefined ? formatPence(item.listPricePence) : undefined],
     ['Sold for', item.salePricePence !== undefined ? formatPence(item.salePricePence) : undefined],
     ['Sold on', item.salePlatform && PLATFORM_LABELS[item.salePlatform]],
     ['Added', formatDate(item.createdAt)],
@@ -246,6 +248,9 @@ export function ItemPage({ id }: { id: string }) {
         <div className="button-row action-row">
           <a className="button" href={itemHref(item.id, 'update')}>
             Add update
+          </a>
+          <a className="button secondary-link outline-link" href={itemHref(item.id, 'sell')}>
+            {item.status === 'sold' ? 'Sale details' : 'Sell'}
           </a>
           <a className="button secondary-link outline-link" href={itemHref(item.id, 'edit')}>
             Edit details

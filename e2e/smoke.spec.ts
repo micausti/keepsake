@@ -16,8 +16,9 @@ const suggestion = {
   uncertain: ['brand'],
 };
 
-test('set up, add an item with AI, browse, update, hand down, work offline', async ({ page, context }) => {
+test('set up, add an item with AI, browse, update, sell, hand down, work offline', async ({ page, context }) => {
   const checkProblems = watchForProblems(page);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   page.on('dialog', (dialog) => void dialog.accept());
 
   // The Anthropic API is simulated; everything else is the real build.
@@ -118,8 +119,25 @@ test('set up, add an item with AI, browse, update, hand down, work offline', asy
   await page.getByLabel('Note').fill('Small mark on the sleeve');
   await page.getByRole('button', { name: 'Save update' }).click();
   await expect(page.getByText('Condition: Good')).toBeVisible();
-  await page.getByLabel('Status').selectOption('storage');
-  await expect(page.getByText('Status: In storage')).toBeVisible();
+  await page.getByLabel('Status').selectOption('to_sell');
+  await expect(page.getByText('Status: To sell')).toBeVisible();
+
+  // Sell: copy a listing field, mark listed, then sold.
+  await page.getByRole('link', { name: 'Sell', exact: true }).click();
+  await page.getByRole('tab', { name: 'Vinted' }).click();
+  const vinted = page.getByRole('region', { name: 'Vinted listing' });
+  await expect(vinted.getByText('Navy padded coat, 2-3 years')).toBeVisible();
+  await vinted.getByRole('button', { name: 'Copy title' }).click();
+  await expect(vinted.getByRole('button', { name: 'Copy title' })).toHaveText('Copied ✓');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Navy padded coat, 2-3 years');
+  await page.getByLabel('Asking price (£)').fill('12');
+  await page.getByRole('button', { name: 'Mark as listed' }).click();
+  await expect(page.getByText(/On Vinted at £12\.00 since/)).toBeVisible();
+  await page.getByLabel('For (£)').fill('11');
+  await page.getByRole('button', { name: 'Mark as sold' }).click();
+  await expect(page.getByText(/Sold on Vinted for £11\.00/)).toBeVisible();
+  await page.getByRole('link', { name: 'Home' }).click();
+  await expect(page.getByRole('region', { name: 'Selling' })).toContainText('£11.00 earned so far.');
 
   // Gaps: Arlo's outgrown top is Zoe's next size; hand it down.
   await page.getByRole('link', { name: 'Gaps' }).click();
@@ -134,6 +152,8 @@ test('set up, add an item with AI, browse, update, hand down, work offline', asy
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Gaps' })).toBeVisible();
   await page.getByRole('link', { name: 'Items' }).click();
+  await page.getByRole('button', { name: /^Filters/ }).click();
+  await page.getByLabel('Status').selectOption('');
   await expect(page.locator('.item-row')).toHaveCount(2);
   await context.setOffline(false);
 

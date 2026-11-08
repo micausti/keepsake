@@ -1,5 +1,6 @@
 import { parsePounds } from '../domain/money.ts';
-import type { Condition, ItemStatus } from '../domain/options.ts';
+import { PLATFORM_LABELS, type Condition, type ItemStatus, type Platform } from '../domain/options.ts';
+import { formatPence } from '../domain/money.ts';
 import type { ItemDraft } from '../domain/draft.ts';
 import type { Item, ItemEvent, Photo } from '../domain/types.ts';
 import { db, newId, now, type KeepsakeDB } from './db.ts';
@@ -138,8 +139,12 @@ export async function updateItem(id: string, draft: ItemDraft, database: Keepsak
       ...edited,
       createdAt: existing.createdAt,
       coverPhotoId: existing.coverPhotoId,
+      listPricePence: existing.listPricePence,
+      listedOn: existing.listedOn,
+      listedAt: existing.listedAt,
       salePricePence: existing.salePricePence,
       salePlatform: existing.salePlatform,
+      soldAt: existing.soldAt,
     };
     await database.items.put(item);
     if (item.status !== existing.status) {
@@ -254,4 +259,76 @@ export async function handDown(
 /** Marks several items as outgrown at once, each with a timeline entry. */
 export async function markOutgrown(itemIds: string[], database: KeepsakeDB = db): Promise<void> {
   for (const id of itemIds) await setStatus(id, 'outgrown', database);
+}
+
+const platformList = (platforms: Platform[]) => platforms.map((p) => PLATFORM_LABELS[p]).join(', ');
+
+/** Records that an item is listed for sale, where and at what price. */
+export async function markListed(
+  itemId: string,
+  listing: { platforms: Platform[]; pricePence?: number },
+  database: KeepsakeDB = db,
+): Promise<void> {
+  if (!listing.platforms.length) throw new DraftError('Choose where it’s listed.');
+  const timestamp = now();
+  await database.transaction('rw', database.items, database.events, async () => {
+    const item = await requireItem(itemId, database);
+    await database.items.put({
+      ...item,
+      status: 'listed',
+      listedOn: listing.platforms,
+      listPricePence: listing.pricePence,
+      listedAt: item.status === 'listed' ? item.listedAt : timestamp,
+      updatedAt: timestamp,
+    });
+    const price = listing.pricePence !== undefined ? ` at ${formatPence(listing.pricePence)}` : '';
+    await database.events.add({
+      id: newId(),
+      itemId,
+      at: timestamp,
+      kind: 'status',
+      status: 'listed',
+      note: `Listed on ${platformList(listing.platforms)}${price}`,
+    });
+  });
+}
+
+/** Records a sale. */
+export async function markSold(
+  itemId: string,
+  sale: { platform: Platform; pricePence?: number },
+  database: KeepsakeDB = db,
+): Promise<void> {
+  const timestamp = now();
+  await database.transaction('rw', database.items, database.events, async () => {
+    const item = await requireItem(itemId, database);
+    await database.items.put({
+      ...item,
+      status: 'sold',
+      salePlatform: sale.platform,
+      salePricePence: sale.pricePence,
+      soldAt: timestamp,
+      listedOn: undefined,
+      updatedAt: timestamp,
+    });
+    const price = sale.pricePence !== undefined ? ` for ${formatPence(sale.pricePence)}` : '';
+    await database.events.add({
+      id: newId(),
+      itemId,
+      at: timestamp,
+      kind: 'status',
+      status: 'sold',
+      note: `Sold on ${PLATFORM_LABELS[sale.platform]}${price}`,
+    });
+  });
+}
+
+/** Takes an item off sale but keeps it ready to sell again. */
+export async function unlist(itemId: string, database: KeepsakeDB = db): Promise<void> {
+  const timestamp = now();
+  await database.transaction('rw', database.items, database.events, async () => {
+    const item = await requireItem(itemId, database);
+    await database.items.put({ ...item, status: 'to_sell', listedOn: undefined, updatedAt: timestamp });
+    await database.events.add({ id: newId(), itemId, at: timestamp, kind: 'status', status: 'to_sell', note: 'Taken off sale' });
+  });
 }

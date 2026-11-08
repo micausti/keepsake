@@ -10,7 +10,8 @@ export type Route =
   | { name: Page }
   | { name: 'item'; id: string }
   | { name: 'edit'; id: string }
-  | { name: 'update'; id: string };
+  | { name: 'update'; id: string }
+  | { name: 'sell'; id: string };
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -18,6 +19,7 @@ export function parseRoute(hash: string): Route {
   if (first === 'item' && id) {
     if (action === 'edit') return { name: 'edit', id };
     if (action === 'update') return { name: 'update', id };
+    if (action === 'sell') return { name: 'sell', id };
     return { name: 'item', id };
   }
   if (first === 'items' || first === 'add' || first === 'gaps' || first === 'settings') return { name: first };
@@ -25,7 +27,7 @@ export function parseRoute(hash: string): Route {
 }
 
 export const hrefFor = (page: Page): string => (page === 'home' ? '#/' : `#/${page}`);
-export const itemHref = (id: string, action?: 'edit' | 'update'): string =>
+export const itemHref = (id: string, action?: 'edit' | 'update' | 'sell'): string =>
   `#/item/${encodeURIComponent(id)}${action ? `/${action}` : ''}`;
 
 export function navigate(href: string, { replace = false } = {}): void {
@@ -49,5 +51,7 @@ export function useRoute(): Route {
 
 /** The tab a route belongs to, for highlighting the tab bar. */
 export function tabFor(route: Route): Page {
-  return route.name === 'item' || route.name === 'edit' || route.name === 'update' ? 'items' : route.name;
+  return route.name === 'item' || route.name === 'edit' || route.name === 'update' || route.name === 'sell'
+    ? 'items'
+    : route.name;
 }
