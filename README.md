@@ -26,11 +26,11 @@ offline-first web app (PWA) built for iPhone.
 
 | Path | What's there |
 | ---- | ------------ |
-| `src/domain/` | Item fields and option lists (categories, statuses, conditions, seasons, platforms), UK size scales, search and filters, money and date helpers |
+| `src/domain/` | Item fields and option lists (categories, statuses, conditions, seasons, platforms), UK size scales, search and filters, gaps and hand-me-downs, money and date helpers |
 | `src/db/` | Dexie database schema, children and settings storage, storage persistence |
 | `src/ai/` | Anthropic client (browser, user's own key), item description prompt and output schema |
 | `src/photos/` | Photo resizing, EXIF stripping, date-taken reader |
-| `src/pages/` | Home, Items (browse), item page, edit, add update, Add item and Settings screens |
+| `src/pages/` | Home, Items (browse), item page, edit, add update, Add item, Gaps and Settings screens |
 | `src/ui/` | Hash router, tab bar, shared controls |
 | `build/` | Build-time Content Security Policy |
 
@@ -50,8 +50,8 @@ Data model notes:
 | 0 | Repo scaffold, CI/CD, deploy a placeholder PWA ✓ |
 | 1 | Data model, Dexie, settings (API key, children, UK sizes) ✓ |
 | 2 | Snap → AI auto-fill → review → save ✓ |
-| **3** | Browse/filter/search; item page with condition timeline and updates ← *you are here* |
-| 4 | Gaps view by child/size/category; hand-me-down action |
+| 3 | Browse/filter/search; item page with condition timeline and updates ✓ |
+| **4** | Gaps view by child/size/category; hand-me-down action ← *you are here* |
 | 5 | Sell mode: copy-ready listings (Vinted, eBay, Facebook Marketplace, Depop); share-sheet photos; track listed/sold |
 | 6 | Export/restore backup file plus a weekly reminder; polish |
 

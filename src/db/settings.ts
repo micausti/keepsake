@@ -1,3 +1,4 @@
+import type { GapTargets } from '../domain/gaps.ts';
 import { db, type KeepsakeDB } from './db.ts';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5-5';
@@ -7,6 +8,8 @@ export interface Settings {
   apiKey?: string;
   /** Model id used for AI auto-fill. */
   model: string;
+  /** Wanted number of items per category per size; missing ones use the defaults. */
+  gapTargets?: GapTargets;
 }
 
 const DEFAULTS: Settings = { model: DEFAULT_MODEL };
