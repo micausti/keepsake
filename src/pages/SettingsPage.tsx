@@ -3,6 +3,7 @@ import { db } from '../db/db.ts';
 import { getSettings } from '../db/settings.ts';
 import { ApiKeySection } from './settings/ApiKeySection.tsx';
 import { ChildrenSection } from './settings/ChildrenSection.tsx';
+import { BackupSection } from './settings/BackupSection.tsx';
 import { StorageSection } from './settings/StorageSection.tsx';
 
 export function SettingsPage() {
@@ -18,6 +19,7 @@ export function SettingsPage() {
       </header>
       <ChildrenSection items={children} />
       <ApiKeySection settings={settings} />
+      <BackupSection lastBackupAt={settings.lastBackupAt} />
       <StorageSection />
       <footer className="app-footer">
         <small>Version {__APP_VERSION__}</small>

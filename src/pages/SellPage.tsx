@@ -98,7 +98,10 @@ function SavePhotos({ item, photos }: { item: Item; photos: Photo[] }) {
       <button type="button" className="wide" onClick={() => void save()}>
         Save or share {photos.length === 1 ? 'photo' : `${photos.length} photos`}
       </button>
-      <p className="muted">Opens the share sheet: choose “Save Images”, or send them straight to the app.</p>
+      <p className="muted">
+        Tap “Save Images” to add them to your Photos, then pick them from Recents in the selling app. (Some apps
+        also appear in the share sheet.)
+      </p>
       {message && <p className="warning">{message}</p>}
     </section>
   );
@@ -267,7 +270,13 @@ export function SellPage({ id }: { id: string }) {
 
       <ListingCard listing={buildListing(item, platform)} price={askingPrice} platform={platform} />
       <SavePhotos item={item} photos={ordered} />
-      <StatusCard key={item.status} item={item} platform={platform} price={askingPrice} />
+      {/* Before listing, the platform choices follow the selected tab. */}
+      <StatusCard
+        key={item.status === 'listed' || item.status === 'sold' ? item.status : `${item.status}-${platform}`}
+        item={item}
+        platform={platform}
+        price={askingPrice}
+      />
     </>
   );
 }

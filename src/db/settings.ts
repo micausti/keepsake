@@ -10,6 +10,8 @@ export interface Settings {
   model: string;
   /** Wanted number of items per category per size; missing ones use the defaults. */
   gapTargets?: GapTargets;
+  /** When the last backup file was made. */
+  lastBackupAt?: string;
 }
 
 const DEFAULTS: Settings = { model: DEFAULT_MODEL };

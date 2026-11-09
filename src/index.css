@@ -908,3 +908,19 @@ a.outline-link {
   color: var(--accent);
   font-size: 1.4rem;
 }
+
+/* --- Phase 6: backup ------------------------------------------------------- */
+
+.backup-reminder {
+  border-color: var(--warning-text);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.backup-reminder h2 {
+  color: inherit;
+}
+
+.backup-controls {
+  margin: 0.5rem 0;
+}

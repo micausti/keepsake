@@ -52,7 +52,7 @@ export function StorageSection() {
         </>
       )}
       <p className="muted">
-        Everything is stored only on this device. Backup to a file arrives in a later update.
+        Everything is stored only on this device. Keep a backup file too (see Backup above).
       </p>
     </section>
   );

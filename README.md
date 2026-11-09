@@ -30,6 +30,7 @@ offline-first web app (PWA) built for iPhone.
 | `src/db/` | Dexie database schema, children and settings storage, storage persistence |
 | `src/ai/` | Anthropic client (browser, user's own key), item description prompt and output schema |
 | `src/photos/` | Photo resizing, EXIF stripping, date-taken reader |
+| `src/backup/` | Backup file (ZIP) export and restore, weekly reminder |
 | `src/pages/` | Home, Items (browse), item page, edit, add update, sell, Add item, Gaps and Settings screens |
 | `src/ui/` | Hash router, tab bar, shared controls |
 | `build/` | Build-time Content Security Policy |
@@ -52,8 +53,8 @@ Data model notes:
 | 2 | Snap → AI auto-fill → review → save ✓ |
 | 3 | Browse/filter/search; item page with condition timeline and updates ✓ |
 | 4 | Gaps view by child/size/category; hand-me-down action ✓ |
-| **5** | Sell mode: copy-ready listings (Vinted, eBay, Facebook Marketplace, Depop); share-sheet photos; track listed/sold ← *you are here* |
-| 6 | Export/restore backup file plus a weekly reminder; polish |
+| 5 | Sell mode: copy-ready listings (Vinted, eBay, Facebook Marketplace, Depop); share-sheet photos; track listed/sold ✓ |
+| **6** | Export/restore backup file plus a weekly reminder; polish ← *you are here* |
 
 ## Development
 
@@ -115,6 +116,17 @@ up to date.
 - Claude returns structured fields (checked against a schema) and marks any it
   guessed, so the form can flag them for checking. Requests run at low effort
   to keep each item at roughly a penny. Nothing is saved until you tap Save.
+
+## Backups
+
+Settings → Backup makes a single `.zip` file: `keepsake.json` (children,
+items, history and settings) plus every photo as a JPEG, so it can also be
+opened on a computer. Save it with "Save to Files", ideally to iCloud Drive or
+somewhere off the phone. **The API key is never included.** Restoring replaces
+everything on the phone with the backup but keeps the phone's API key. Home
+shows a reminder when the last backup is more than 7 days old. It's an in-app
+reminder only: with no server, the app can't send notifications while it's
+closed.
 
 ## API key safety
 

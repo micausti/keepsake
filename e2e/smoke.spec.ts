@@ -16,7 +16,10 @@ const suggestion = {
   uncertain: ['brand'],
 };
 
-test('set up, add an item with AI, browse, update, sell, hand down, work offline', async ({ page, context }) => {
+test('set up, add an item with AI, browse, update, sell, hand down, back up and restore, work offline', async ({
+  page,
+  context,
+}) => {
   const checkProblems = watchForProblems(page);
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   page.on('dialog', (dialog) => void dialog.accept());
@@ -146,11 +149,44 @@ test('set up, add an item with AI, browse, update, sell, hand down, work offline
   await handDowns.getByRole('button', { name: 'Give to Zoe' }).click();
   await expect(handDowns).toHaveCount(0);
 
+  // Backup: the Home reminder, export with photos, then restore after a deletion.
+  await page.getByRole('link', { name: 'Home' }).click();
+  const reminder = page.getByRole('region', { name: 'Time for a backup' });
+  await expect(reminder).toBeVisible();
+  await page.getByRole('link', { name: 'Settings' }).click();
+  const backup = page.getByRole('region', { name: 'Backup' });
+  await backup.getByRole('button', { name: 'Prepare backup' }).click();
+  await expect(backup.getByText(/Ready: 2 items and 1 photos/)).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    backup.getByRole('button', { name: 'Save backup file' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^keepsake-backup-\d{4}-\d{2}-\d{2}\.zip$/);
+  const backupPath = test.info().outputPath('backup.zip');
+  await download.saveAs(backupPath);
+  await expect(backup.getByText(/Last backup: today/)).toBeVisible();
+  await page.getByRole('link', { name: 'Home' }).click();
+  await expect(reminder).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Items' }).click();
+  await page.getByLabel('Search items').fill('dino');
+  await page.locator('.item-row', { hasText: 'Dino top' }).click();
+  await page.getByRole('button', { name: 'Delete item' }).click();
+  await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();
+  await expect(page.locator('.item-row', { hasText: 'Dino top' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByTestId('restore-input').setInputFiles(backupPath);
+  await expect(backup.getByText(/✓ Restored 2 items/)).toBeVisible();
+  await expect(page.getByText('sk-ant-api03…TEST')).toBeVisible(); // key kept
+  const restored = await storedPhotos(page);
+  expect(restored.map((p) => p.size)).toEqual([[2000, 1500]]);
+
   // Works offline once loaded (service worker).
   await page.evaluate(() => navigator.serviceWorker.ready);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Gaps' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await page.getByRole('link', { name: 'Items' }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
   await page.getByLabel('Status').selectOption('');
