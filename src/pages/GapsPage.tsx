@@ -35,13 +35,13 @@ function Cell({ cell, category }: { cell: GapCell; category: CategoryId }) {
       className={`gap-cell gap-${cell.state}`}
       onClick={() => openItems(category, cell.size.id)}
       aria-label={`${cell.have} of ${cell.target}${missing ? `, ${missing} short` : ''}${
-        cell.handMeDowns ? `, ${cell.handMeDowns} could be handed down` : ''
+        cell.handMeDowns ? `, ${cell.handMeDowns} could be passed on from a sibling` : ''
       }`}
     >
       <span className="gap-count">
         {cell.have}/{cell.target}
       </span>
-      {cell.handMeDowns > 0 && <span className="gap-extra">+{cell.handMeDowns} hand-me-down</span>}
+      {cell.handMeDowns > 0 && <span className="gap-extra">+{cell.handMeDowns} from sibling</span>}
     </button>
   );
 }
@@ -124,7 +124,7 @@ function HandMeDowns({ children, items }: { children: Child[]; items: Item[] }) 
   const name = (id?: string) => children.find((c) => c.id === id)?.name;
   return (
     <section className="card" aria-labelledby="handdowns-heading">
-      <h2 id="handdowns-heading">Ready to hand down</h2>
+      <h2 id="handdowns-heading">Could be passed on</h2>
       <ul className="plain-list">
         {suggestions.map(({ item, to, when }) => (
           <li key={`${item.id}-${to.id}`} className="child-row">
@@ -138,7 +138,7 @@ function HandMeDowns({ children, items }: { children: Child[]; items: Item[] }) 
               </div>
             </div>
             <button type="button" className="secondary outline" onClick={() => void handDown(item.id, to.id, when === 'now')}>
-              Give to {to.name}
+              Pass to {to.name}
             </button>
           </li>
         ))}
