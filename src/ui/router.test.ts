@@ -11,6 +11,7 @@ describe('router', () => {
     ['#/item/abc-123', { name: 'item', id: 'abc-123' }],
     ['#/item/abc-123/edit', { name: 'edit', id: 'abc-123' }],
     ['#/item/abc-123/update', { name: 'update', id: 'abc-123' }],
+    ['#/item/abc-123/sell', { name: 'sell', id: 'abc-123' }],
     ['#/item', { name: 'home' }],
     ['#/nonsense', { name: 'home' }],
   ])('parses %j', (hash, route) => {

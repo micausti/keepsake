@@ -3,16 +3,23 @@ import { db } from '../db/db.ts';
 import { recentItems } from '../db/items.ts';
 import { getSettings } from '../db/settings.ts';
 import { formatAge, sizeLabel } from '../domain/sizes.ts';
+import { formatPence } from '../domain/money.ts';
 import { ItemRow } from '../ui/ItemRow.tsx';
 import { hrefFor } from '../ui/router.ts';
+import { presetBrowse } from './BrowsePage.tsx';
 
 export function HomePage() {
   const children = useLiveQuery(() => db.children.orderBy('name').toArray());
   const items = useLiveQuery(() => recentItems(5));
   const itemCount = useLiveQuery(() => db.items.count());
   const settings = useLiveQuery(() => getSettings());
+  const selling = useLiveQuery(() =>
+    db.items.where('status').anyOf('to_sell', 'listed', 'sold').toArray(),
+  );
 
-  if (!children || !items || itemCount === undefined || !settings) return null;
+  if (!children || !items || itemCount === undefined || !settings || !selling) return null;
+  const count = (status: string) => selling.filter((i) => i.status === status).length;
+  const earned = selling.reduce((sum, i) => sum + (i.status === 'sold' ? (i.salePricePence ?? 0) : 0), 0);
 
   const setupDone = Boolean(settings.apiKey) && children.length > 0;
 
@@ -59,6 +66,24 @@ export function HomePage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {selling.length > 0 && (
+        <section className="card" aria-labelledby="selling-heading">
+          <h2 id="selling-heading">Selling</h2>
+          <div className="stats">
+            <a className="stat" href={hrefFor('items')} onClick={() => presetBrowse({ status: 'to_sell' })}>
+              <strong>{count('to_sell')}</strong> to sell
+            </a>
+            <a className="stat" href={hrefFor('items')} onClick={() => presetBrowse({ status: 'listed' })}>
+              <strong>{count('listed')}</strong> listed
+            </a>
+            <a className="stat" href={hrefFor('items')} onClick={() => presetBrowse({ status: 'sold' })}>
+              <strong>{count('sold')}</strong> sold
+            </a>
+          </div>
+          {earned > 0 && <p className="muted">{formatPence(earned)} earned so far.</p>}
         </section>
       )}
 

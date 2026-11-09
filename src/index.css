@@ -788,3 +788,123 @@ a.outline-link {
   max-width: 80px;
   min-width: 0;
 }
+
+/* --- Phase 5: selling ------------------------------------------------------ */
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  background: var(--border);
+}
+
+.segmented button {
+  min-height: 40px;
+  padding: 0 0.25rem;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.segmented button.selected {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+.asking-price {
+  margin-bottom: 0.75rem;
+}
+
+.copy-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.copy-row:last-of-type {
+  border-bottom: 0;
+}
+
+.copy-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.copy-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.copy-value {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.copy-button {
+  flex: none;
+  min-width: 5.5rem;
+}
+
+.sell-photos {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+.sell-photo {
+  flex: none;
+  width: 30%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.sold-form {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.sold-form h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.sold-form .input-row .field {
+  flex: 1;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--bg);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.stat strong {
+  color: var(--accent);
+  font-size: 1.4rem;
+}
