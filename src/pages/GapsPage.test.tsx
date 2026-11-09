@@ -100,6 +100,16 @@ describe('Gaps', () => {
 });
 
 describe('Item page hand-down', () => {
+  it('is not offered for a lost item', async () => {
+    await seed();
+    const lost = await add({ title: 'Lost glove', category: 'accessories', status: 'lost' });
+    render(<App />);
+    await go(`#/item/${lost.id}`);
+    expect(await screen.findByRole('heading', { name: 'Lost glove' })).toBeDefined();
+    expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('lost');
+    expect(screen.queryByRole('button', { name: /Hand down|Give to/ })).toBeNull();
+  });
+
   it('hands an item to the other child', async () => {
     const { zoe } = await seed();
     const coat = (await db.items.toArray()).find((i) => i.title === 'Arlo old coat');

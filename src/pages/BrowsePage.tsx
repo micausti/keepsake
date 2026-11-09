@@ -142,8 +142,8 @@ export function BrowsePage() {
             value={query.status}
             onChange={(status) => set({ status: status as StatusFilter })}
           >
-            <option value="active">Still have (not sold or donated)</option>
-            <option value="">All, including sold and donated</option>
+            <option value="active">Still have (not sold, donated or lost)</option>
+            <option value="">All, including sold, donated and lost</option>
             {ITEM_STATUSES.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}

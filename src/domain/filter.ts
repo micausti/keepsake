@@ -11,8 +11,8 @@ import {
 import { sizeLabel, sizesFor } from './sizes.ts';
 import type { Child, Item } from './types.ts';
 
-/** Statuses for items that have left the house. */
-export const GONE_STATUSES: readonly ItemStatus[] = ['sold', 'donated'];
+/** Statuses for items that have left the house (or gone missing). */
+export const GONE_STATUSES: readonly ItemStatus[] = ['sold', 'donated', 'lost'];
 
 export type StatusFilter = ItemStatus | 'active' | '';
 export type SortOrder = 'recent' | 'name' | 'size';
@@ -23,7 +23,7 @@ export interface ItemQuery {
   childId: string;
   category: CategoryId | '';
   size: string;
-  /** 'active' = everything except sold and donated; '' = everything. */
+  /** 'active' = everything except sold, donated and lost; '' = everything. */
   status: StatusFilter;
   season: Season | '';
   condition: Condition | '';

@@ -23,6 +23,7 @@ export const ITEM_STATUSES = [
   { id: 'listed', label: 'Listed' },
   { id: 'sold', label: 'Sold' },
   { id: 'donated', label: 'Donated' },
+  { id: 'lost', label: 'Lost' },
 ] as const satisfies readonly Option[];
 export type ItemStatus = (typeof ITEM_STATUSES)[number]['id'];
 export const STATUS_LABELS = labelsOf<ItemStatus>(ITEM_STATUSES);

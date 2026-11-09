@@ -28,15 +28,17 @@ const items = [
   item({ title: 'Floral dress', category: 'dresses', size: '5-6y', childId: 'zoe', colour: 'Pink and green', seasons: ['summer'], status: 'sold' }),
   item({ title: 'Wooden train set', category: 'toys', size: '3y+', seasons: [], status: 'storage', description: 'Brio-style track' }),
   item({ title: 'Striped top', category: 'tops', size: '12-18m', childId: 'zoe', status: 'hand_down', condition: 'very_good' }),
+  item({ title: 'Blue mitten', category: 'accessories', status: 'lost' }),
 ];
 
 const run = (q: Partial<ItemQuery>) => filterItems(items, { ...DEFAULT_QUERY, ...q }, children).map((i) => i.title);
 
 describe('filterItems', () => {
-  it('hides sold and donated items by default, newest first', () => {
+  it('hides sold, donated and lost items by default, newest first', () => {
     expect(run({})).toEqual(['Striped top', 'Wooden train set', 'Red wellies', 'Navy padded coat']);
-    expect(run({ status: '' })).toHaveLength(5);
+    expect(run({ status: '' })).toHaveLength(6);
     expect(run({ status: 'sold' })).toEqual(['Floral dress']);
+    expect(run({ status: 'lost' })).toEqual(['Blue mitten']);
   });
 
   it('searches across fields, ignoring case and accents, requiring every word', () => {

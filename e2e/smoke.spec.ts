@@ -109,7 +109,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
 
   // Browse and search.
-  await page.getByRole('link', { name: 'Items' }).click();
+  await page.getByRole('link', { name: 'Items', exact: true }).click();
   await expect(page.locator('.result-count')).toHaveText('2 items');
   await page.getByLabel('Search items').fill('navy');
   await expect(page.locator('.item-row strong')).toHaveText(['Navy padded coat']);
@@ -139,21 +139,21 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByLabel('For (£)').fill('11');
   await page.getByRole('button', { name: 'Mark as sold' }).click();
   await expect(page.getByText(/Sold on Vinted for £11\.00/)).toBeVisible();
-  await page.getByRole('link', { name: 'Home' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Selling' })).toContainText('£11.00 earned so far.');
 
   // Gaps: Arlo's outgrown top is Zoe's next size; hand it down.
-  await page.getByRole('link', { name: 'Gaps' }).click();
+  await page.getByRole('link', { name: 'Gaps', exact: true }).click();
   const handDowns = page.getByRole('region', { name: 'Ready to hand down' });
   await expect(handDowns.getByText('Dino top')).toBeVisible();
   await handDowns.getByRole('button', { name: 'Give to Zoe' }).click();
   await expect(handDowns).toHaveCount(0);
 
   // Backup: the Home reminder, export with photos, then restore after a deletion.
-  await page.getByRole('link', { name: 'Home' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   const reminder = page.getByRole('region', { name: 'Time for a backup' });
   await expect(reminder).toBeVisible();
-  await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   const backup = page.getByRole('region', { name: 'Backup' });
   await backup.getByRole('button', { name: 'Prepare backup' }).click();
   await expect(backup.getByText(/Ready: 2 items and 1 photos/)).toBeVisible();
@@ -165,17 +165,17 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   const backupPath = test.info().outputPath('backup.zip');
   await download.saveAs(backupPath);
   await expect(backup.getByText(/Last backup: today/)).toBeVisible();
-  await page.getByRole('link', { name: 'Home' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(reminder).toHaveCount(0);
 
-  await page.getByRole('link', { name: 'Items' }).click();
+  await page.getByRole('link', { name: 'Items', exact: true }).click();
   await page.getByLabel('Search items').fill('dino');
   await page.locator('.item-row', { hasText: 'Dino top' }).click();
   await page.getByRole('button', { name: 'Delete item' }).click();
   await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();
   await expect(page.locator('.item-row', { hasText: 'Dino top' })).toHaveCount(0);
 
-  await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByTestId('restore-input').setInputFiles(backupPath);
   await expect(backup.getByText(/✓ Restored 2 items/)).toBeVisible();
   await expect(page.getByText('sk-ant-api03…TEST')).toBeVisible(); // key kept
@@ -187,7 +187,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-  await page.getByRole('link', { name: 'Items' }).click();
+  await page.getByRole('link', { name: 'Items', exact: true }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
   await page.getByLabel('Status').selectOption('');
   await expect(page.locator('.item-row')).toHaveCount(2);

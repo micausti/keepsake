@@ -14,7 +14,7 @@ describe('option lists', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('has every status from the plan', () => {
+  it('has every status from the plan, plus lost', () => {
     expect(ITEM_STATUSES.map((s) => s.id)).toEqual([
       'in_use',
       'outgrown',
@@ -24,6 +24,7 @@ describe('option lists', () => {
       'listed',
       'sold',
       'donated',
+      'lost',
     ]);
   });
 
