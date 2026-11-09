@@ -40,7 +40,7 @@ describe('Gaps', () => {
     const topsRow = within(zoe).getByRole('rowheader', { name: /Tops & T-shirts/ }).closest('tr');
     expect(topsRow?.textContent).toContain('2/7');
     const coatRow = within(zoe).getByRole('rowheader', { name: /Coats & jackets/ }).closest('tr');
-    expect(within(coatRow as HTMLElement).getByRole('button', { name: /could be handed down/ })).toBeDefined();
+    expect(within(coatRow as HTMLElement).getByRole('button', { name: /could be passed on from a sibling/ })).toBeDefined();
   });
 
   it('hands down a suggested item', async () => {
@@ -48,9 +48,9 @@ describe('Gaps', () => {
     render(<App />);
     await go('#/gaps');
 
-    const section = await screen.findByRole('region', { name: 'Ready to hand down' });
+    const section = await screen.findByRole('region', { name: 'Could be passed on' });
     expect(within(section).getByText('Arlo old coat')).toBeDefined();
-    fireEvent.click(within(section).getByRole('button', { name: 'Give to Zoe' }));
+    fireEvent.click(within(section).getByRole('button', { name: 'Pass to Zoe' }));
     await waitFor(async () => {
       const coat = (await db.items.toArray()).find((i) => i.title === 'Arlo old coat');
       expect(coat).toMatchObject({ childId: zoe.id, status: 'storage' });
@@ -107,7 +107,7 @@ describe('Item page hand-down', () => {
     await go(`#/item/${lost.id}`);
     expect(await screen.findByRole('heading', { name: 'Lost glove' })).toBeDefined();
     expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('lost');
-    expect(screen.queryByRole('button', { name: /Hand down|Give to/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Pass/ })).toBeNull();
   });
 
   it('hands an item to the other child', async () => {
@@ -115,8 +115,41 @@ describe('Item page hand-down', () => {
     const coat = (await db.items.toArray()).find((i) => i.title === 'Arlo old coat');
     render(<App />);
     await go(`#/item/${coat?.id}`);
-    fireEvent.click(await screen.findByRole('button', { name: 'Hand down to Zoe' }));
-    expect(await screen.findByText('Handed down from Arlo to Zoe')).toBeDefined();
+    fireEvent.click(await screen.findByRole('button', { name: 'Pass to Zoe' }));
+    expect(await screen.findByText('Passed from Arlo to Zoe')).toBeDefined();
     expect((await db.items.get(coat?.id ?? ''))?.childId).toBe(zoe.id);
+  });
+});
+
+describe('Pass to, with three children', () => {
+  it('lets me choose who, in any direction', async () => {
+    const { arlo } = await seed();
+    const baby = await addChild({ name: 'Bea', clothingSize: '6-9m' });
+    // An item of the youngest's, passed up to the eldest.
+    const hat = await add({ title: 'Bobble hat', category: 'accessories', childId: baby.id });
+    render(<App />);
+    await go(`#/item/${hat.id}`);
+
+    const button = await screen.findByRole('button', { name: 'Pass' });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    const picker = screen.getByLabelText('Pass to') as HTMLSelectElement;
+    expect([...picker.options].map((o) => o.text)).toEqual(['Pass to…', 'Arlo', 'Zoe']);
+
+    fireEvent.change(picker, { target: { value: arlo.id } });
+    fireEvent.click(screen.getByRole('button', { name: 'Pass to Arlo' }));
+    expect(await screen.findByText('Passed from Bea to Arlo')).toBeDefined();
+    expect((await db.items.get(hat.id))?.childId).toBe(arlo.id);
+  });
+
+  it('passes an unassigned item', async () => {
+    await seed();
+    const kite = await add({ title: 'Kite', category: 'toys' });
+    render(<App />);
+    await go(`#/item/${kite.id}`);
+    fireEvent.change(await screen.findByLabelText('Pass to'), {
+      target: { value: (await db.children.toArray()).find((c) => c.name === 'Zoe')?.id },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Pass to Zoe' }));
+    expect(await screen.findByText('Passed to Zoe')).toBeDefined();
   });
 });

@@ -36,8 +36,8 @@ function eventTitle(event: ItemEvent, children: Child[]): string {
       return 'Note';
     case 'handdown':
       return event.fromChildId
-        ? `Handed down from ${name(event.fromChildId)} to ${name(event.toChildId)}`
-        : `Given to ${name(event.toChildId)}`;
+        ? `Passed from ${name(event.fromChildId)} to ${name(event.toChildId)}`
+        : `Passed to ${name(event.toChildId)}`;
   }
 }
 
@@ -74,8 +74,11 @@ function Timeline(props: { events: ItemEvent[]; photos: Photo[]; children: Child
   );
 }
 
-/** "Hand down to …" for items that could pass to another child. */
-function HandDown({ item, children }: { item: Item; children: Child[] }) {
+/**
+ * "Pass to …": moves an item to another child, in either direction. With one
+ * other child it's a single button; with more, pick who from a list first.
+ */
+function PassTo({ item, children }: { item: Item; children: Child[] }) {
   const others = children.filter((c) => c.id !== item.childId);
   const [to, setTo] = useState('');
   if (!others.length || GONE_STATUSES.includes(item.status)) return null;
@@ -83,24 +86,24 @@ function HandDown({ item, children }: { item: Item; children: Child[] }) {
   const system = categoryById(item.category).sizeSystem;
   const fitsNow = (child: Child) =>
     (system === 'clothing' || system === 'shoes') && nowAndNext(child, system)[0]?.id === item.size;
-  const give = async (child: Child) => {
-    const now = fitsNow(child);
-    await handDown(item.id, child.id, now);
+  const pass = async (child: Child) => {
+    await handDown(item.id, child.id, fitsNow(child));
     setTo('');
   };
 
   if (others.length === 1) {
     const [only] = others as [Child];
     return (
-      <button type="button" className="secondary outline wide" onClick={() => void give(only)}>
-        {item.childId ? 'Hand down' : 'Give'} to {only.name}
+      <button type="button" className="secondary outline wide" onClick={() => void pass(only)}>
+        Pass to {only.name}
       </button>
     );
   }
+  const chosen = others.find((c) => c.id === to);
   return (
     <div className="input-row hand-down">
-      <select aria-label="Hand down to" value={to} onChange={(e) => setTo(e.target.value)}>
-        <option value="">{item.childId ? 'Hand down to…' : 'Give to…'}</option>
+      <select aria-label="Pass to" value={to} onChange={(e) => setTo(e.target.value)}>
+        <option value="">Pass to…</option>
         {others.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -110,13 +113,10 @@ function HandDown({ item, children }: { item: Item; children: Child[] }) {
       <button
         type="button"
         className="secondary outline"
-        disabled={!to}
-        onClick={() => {
-          const child = others.find((c) => c.id === to);
-          if (child) void give(child);
-        }}
+        disabled={!chosen}
+        onClick={() => chosen && void pass(chosen)}
       >
-        Hand down
+        {chosen ? `Pass to ${chosen.name}` : 'Pass'}
       </button>
     </div>
   );
@@ -245,7 +245,7 @@ export function ItemPage({ id }: { id: string }) {
             ))}
           </select>
         </div>
-        <HandDown item={item} children={children} />
+        <PassTo item={item} children={children} />
         <div className="button-row action-row">
           <a className="button" href={itemHref(item.id, 'update')}>
             Add update

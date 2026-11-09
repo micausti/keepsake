@@ -144,9 +144,9 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
 
   // Gaps: Arlo's outgrown top is Zoe's next size; hand it down.
   await page.getByRole('link', { name: 'Gaps', exact: true }).click();
-  const handDowns = page.getByRole('region', { name: 'Ready to hand down' });
+  const handDowns = page.getByRole('region', { name: 'Could be passed on' });
   await expect(handDowns.getByText('Dino top')).toBeVisible();
-  await handDowns.getByRole('button', { name: 'Give to Zoe' }).click();
+  await handDowns.getByRole('button', { name: 'Pass to Zoe' }).click();
   await expect(handDowns).toHaveCount(0);
 
   // Backup: the Home reminder, export with photos, then restore after a deletion.
