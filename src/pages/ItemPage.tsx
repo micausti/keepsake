@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { db } from '../db/db.ts';
 import { deleteItem, handDown, setCoverPhoto, setStatus } from '../db/items.ts';
+import { GONE_STATUSES } from '../domain/filter.ts';
 import { nowAndNext } from '../domain/gaps.ts';
 import { formatDate } from '../domain/dates.ts';
 import { formatPence } from '../domain/money.ts';
@@ -77,7 +78,7 @@ function Timeline(props: { events: ItemEvent[]; photos: Photo[]; children: Child
 function HandDown({ item, children }: { item: Item; children: Child[] }) {
   const others = children.filter((c) => c.id !== item.childId);
   const [to, setTo] = useState('');
-  if (!others.length || item.status === 'sold' || item.status === 'donated') return null;
+  if (!others.length || GONE_STATUSES.includes(item.status)) return null;
 
   const system = categoryById(item.category).sizeSystem;
   const fitsNow = (child: Child) =>
