@@ -3,6 +3,8 @@ import { db } from '../db/db.ts';
 import { recentItems } from '../db/items.ts';
 import { getSettings } from '../db/settings.ts';
 import { formatAge, sizeLabel } from '../domain/sizes.ts';
+import { BackupControls } from '../backup/BackupControls.tsx';
+import { backupDue, daysSinceBackup } from '../backup/backup.ts';
 import { formatPence } from '../domain/money.ts';
 import { ItemRow } from '../ui/ItemRow.tsx';
 import { hrefFor } from '../ui/router.ts';
@@ -40,6 +42,19 @@ export function HomePage() {
           <a className="button" href={hrefFor('settings')}>
             Open Settings
           </a>
+        </section>
+      )}
+
+      {backupDue(settings.lastBackupAt, itemCount) && (
+        <section className="card backup-reminder" aria-labelledby="backup-reminder-heading">
+          <h2 id="backup-reminder-heading">Time for a backup</h2>
+          <p>
+            {settings.lastBackupAt
+              ? `Your last backup was ${daysSinceBackup(settings.lastBackupAt)} days ago.`
+              : 'You haven’t backed up yet.'}{' '}
+            Everything is only on this phone, so save a copy somewhere safe.
+          </p>
+          <BackupControls />
         </section>
       )}
 

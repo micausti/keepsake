@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 /**
@@ -18,6 +19,14 @@ export function UpdatePrompt() {
       }
     },
   });
+
+  // "Ready to work offline" is just news: hide it after a few seconds.
+  // The update prompt stays until it's answered.
+  useEffect(() => {
+    if (!offlineReady || needRefresh) return;
+    const timer = setTimeout(() => setOfflineReady(false), 5000);
+    return () => clearTimeout(timer);
+  }, [offlineReady, needRefresh, setOfflineReady]);
 
   if (!offlineReady && !needRefresh) return null;
 

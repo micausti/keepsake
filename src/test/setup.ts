@@ -12,5 +12,5 @@ beforeEach(async () => {
 // Vitest globals are off, so Testing Library can't auto-register cleanup.
 afterEach(() => {
   cleanup();
-  window.location.hash = '';
+  if (typeof window !== 'undefined') window.location.hash = '';
 });
