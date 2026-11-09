@@ -66,7 +66,16 @@ npm run typecheck
 npm run lint
 npm test
 npm run build && npm run verify && npm run preview
+npm run build && npm run test:e2e   # smoke test in a real browser
 ```
+
+The smoke test (`e2e/`) runs the production build in Chromium on an emulated
+iPhone. It sets up children and a key, adds an item from a photo with EXIF and
+GPS data (checking both are stripped), uses AI auto-fill against a simulated
+API, browses, adds an update, hands an item down and reloads offline, failing
+on any crash, console error or CSP violation. To use a browser that's already
+installed, set `PLAYWRIGHT_CHROMIUM_PATH`; otherwise run
+`npx playwright install chromium` once.
 
 The CSP is added only to production builds, because Vite's dev server needs
 inline scripts. Use `npm run build && npm run preview` to test under the real
@@ -81,7 +90,7 @@ Icons are generated from `public/favicon.svg` with
 
 - **Pull requests:** runs a runtime-dependency audit, type-check, lint, tests
   and a production build. It then checks that the build has the CSP, no inline
-  scripts, and the PWA files.
+  scripts, and the PWA files, and runs the smoke test in a real browser.
 - **Push to `main`:** runs the same checks, then deploys `dist/` to GitHub Pages.
 
 Actions are pinned to commit SHAs. Dependabot keeps them and npm packages

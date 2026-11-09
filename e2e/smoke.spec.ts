@@ -1,0 +1,141 @@
+import { expect, test } from '@playwright/test';
+import { GPS_MARKER, makePhoto, storedPhotos, watchForProblems } from './helpers.ts';
+
+const suggestion = {
+  title: 'Navy padded coat',
+  category: 'outerwear',
+  sizeOnLabel: '2-3 Y',
+  size: '2-3y',
+  seasons: ['autumn', 'winter'],
+  brand: null,
+  colour: 'Navy',
+  material: null,
+  condition: 'very_good',
+  conditionNotes: null,
+  description: 'Warm padded coat with a hood.',
+  uncertain: ['brand'],
+};
+
+test('set up, add an item with AI, browse, update, hand down, work offline', async ({ page, context }) => {
+  const checkProblems = watchForProblems(page);
+  page.on('dialog', (dialog) => void dialog.accept());
+
+  // The Anthropic API is simulated; everything else is the real build.
+  let apiRequest: Record<string, unknown> | undefined;
+  await page.route('https://api.anthropic.com/**', async (route) => {
+    apiRequest = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({
+        id: 'msg_test',
+        type: 'message',
+        role: 'assistant',
+        model: 'claude-sonnet-5-5',
+        content: [{ type: 'text', text: JSON.stringify(suggestion) }],
+        stop_reason: 'end_turn',
+        stop_sequence: null,
+        usage: { input_tokens: 1, output_tokens: 1 },
+      }),
+    });
+  });
+
+  await page.goto('./');
+  await expect(page.getByRole('heading', { name: 'Keepsake', level: 1 })).toBeVisible();
+  await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);
+
+  // Settings: two children and an API key.
+  await page.getByRole('link', { name: 'Open Settings' }).click();
+  for (const [name, size, shoes] of [
+    ['Arlo', '4-5y', 'k10'],
+    ['Zoe', '2-3y', 'k6'],
+  ] as const) {
+    await page.getByRole('button', { name: 'Add a child' }).click();
+    await page.getByLabel('Name').fill(name);
+    await page.getByLabel('Clothing size now').selectOption(size);
+    await page.getByLabel('Shoe size now').selectOption(shoes);
+    await page.getByRole('button', { name: 'Add child' }).click();
+    await expect(page.locator('.child-row strong', { hasText: name })).toBeVisible();
+  }
+  await page.getByLabel('API key').fill(`sk-ant-api03-${'x'.repeat(60)}TEST`);
+  await page.getByRole('button', { name: 'Save key' }).click();
+  await expect(page.getByText('sk-ant-api03…TEST')).toBeVisible();
+
+  // Add an item from a large photo with EXIF date and GPS.
+  await page.getByRole('link', { name: 'Add', exact: true }).click();
+  await page.getByTestId('library-input').setInputFiles({
+    name: 'coat.jpg',
+    mimeType: 'image/jpeg',
+    buffer: await makePhoto(page),
+  });
+  await expect(page.getByAltText('Photo 1')).toBeVisible();
+  await page.getByRole('button', { name: 'Fill in details with AI' }).click();
+  await expect(page.getByLabel('Name')).toHaveValue('Navy padded coat');
+  await expect(page.getByLabel('Size')).toHaveValue('2-3y');
+  await expect(page.getByLabel('Child').locator('option:checked')).toHaveText('Zoe');
+
+  // What went to the API: one small JPEG with no metadata.
+  const content = (apiRequest?.messages as { content: { type: string; source?: { data: string } }[] }[])[0]?.content;
+  const image = Buffer.from(content?.find((b) => b.type === 'image')?.source?.data ?? '', 'base64');
+  expect(image.length).toBeGreaterThan(1000);
+  expect(image.includes('Exif')).toBe(false);
+  expect(image.includes(GPS_MARKER)).toBe(false);
+
+  await page.getByRole('button', { name: 'Save item' }).click();
+  await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
+
+  // What was stored: resized, no EXIF or GPS, date taken kept.
+  const [photo] = await storedPhotos(page);
+  expect(photo?.size).toEqual([2000, 1500]);
+  expect(photo?.thumbSize).toEqual([400, 300]);
+  expect(photo?.hasExif).toBe(false);
+  expect(photo?.text.includes(GPS_MARKER)).toBe(false);
+  expect(photo?.takenAt.startsWith('2025-06-14')).toBe(true);
+
+  // Add a second item by hand, for Arlo, already outgrown.
+  await page.getByRole('button', { name: 'Add another item' }).click();
+  await page.getByRole('button', { name: 'Fill in myself' }).click();
+  await page.getByLabel('Name').fill('Dino top');
+  await page.getByLabel('Category').selectOption('tops');
+  await page.getByLabel('Size').selectOption('3-4y');
+  await page.getByLabel('Child').selectOption({ label: 'Arlo' });
+  await page.getByLabel('Status').selectOption('outgrown');
+  await page.getByRole('button', { name: 'Save item' }).click();
+  await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
+
+  // Browse and search.
+  await page.getByRole('link', { name: 'Items' }).click();
+  await expect(page.locator('.result-count')).toHaveText('2 items');
+  await page.getByLabel('Search items').fill('navy');
+  await expect(page.locator('.item-row strong')).toHaveText(['Navy padded coat']);
+
+  // Item page: add an update and change status.
+  await page.getByText('Navy padded coat').click();
+  await expect(page.getByRole('heading', { name: 'Navy padded coat' })).toBeVisible();
+  await page.getByRole('link', { name: 'Add update' }).click();
+  await page.getByLabel('Condition now').selectOption('good');
+  await page.getByLabel('Note').fill('Small mark on the sleeve');
+  await page.getByRole('button', { name: 'Save update' }).click();
+  await expect(page.getByText('Condition: Good')).toBeVisible();
+  await page.getByLabel('Status').selectOption('storage');
+  await expect(page.getByText('Status: In storage')).toBeVisible();
+
+  // Gaps: Arlo's outgrown top is Zoe's next size; hand it down.
+  await page.getByRole('link', { name: 'Gaps' }).click();
+  const handDowns = page.getByRole('region', { name: 'Ready to hand down' });
+  await expect(handDowns.getByText('Dino top')).toBeVisible();
+  await handDowns.getByRole('button', { name: 'Give to Zoe' }).click();
+  await expect(handDowns).toHaveCount(0);
+
+  // Works offline once loaded (service worker).
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Gaps' })).toBeVisible();
+  await page.getByRole('link', { name: 'Items' }).click();
+  await expect(page.locator('.item-row')).toHaveCount(2);
+  await context.setOffline(false);
+
+  checkProblems();
+});
