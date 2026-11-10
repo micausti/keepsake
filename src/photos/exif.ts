@@ -4,19 +4,35 @@
  * the saved copy is re-encoded without any EXIF (so no GPS location).
  */
 
+const TAG_ORIENTATION = 0x0112;
 const TAG_EXIF_IFD = 0x8769;
 const TAG_DATETIME = 0x0132;
 const TAG_DATETIME_ORIGINAL = 0x9003;
 const TYPE_ASCII = 2;
 
+export interface ExifInfo {
+  dateTaken?: Date;
+  /** EXIF orientation 1–8; 1 means the pixels are already upright. */
+  orientation: number;
+}
+
 export function readExifDateTaken(buffer: ArrayBuffer): Date | undefined {
+  return readExif(buffer).dateTaken;
+}
+
+/** EXIF orientation 1–8 (1 when missing or unreadable). */
+export function readExifOrientation(buffer: ArrayBuffer): number {
+  return readExif(buffer).orientation;
+}
+
+export function readExif(buffer: ArrayBuffer): ExifInfo {
   try {
     const view = new DataView(buffer);
-    if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) return undefined; // not a JPEG
+    if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) return { orientation: 1 }; // not a JPEG
     let offset = 2;
     while (offset + 4 <= view.byteLength) {
       const marker = view.getUint16(offset);
-      if ((marker & 0xff00) !== 0xff00 || marker === 0xffda) return undefined; // start of image data
+      if ((marker & 0xff00) !== 0xff00 || marker === 0xffda) return { orientation: 1 }; // start of image data
       const length = view.getUint16(offset + 2);
       if (marker === 0xffe1 && isExifHeader(view, offset + 4)) {
         return readTiff(view, offset + 10, length - 8);
@@ -24,18 +40,18 @@ export function readExifDateTaken(buffer: ArrayBuffer): Date | undefined {
       offset += 2 + length;
     }
   } catch {
-    // Malformed metadata: fall back to the file date.
+    // Malformed metadata: fall back to the file date and no rotation.
   }
-  return undefined;
+  return { orientation: 1 };
 }
 
 function isExifHeader(view: DataView, at: number): boolean {
   return view.getUint32(at) === 0x45786966 && view.getUint16(at + 4) === 0; // "Exif\0\0"
 }
 
-function readTiff(view: DataView, start: number, length: number): Date | undefined {
+function readTiff(view: DataView, start: number, length: number): ExifInfo {
   const order = view.getUint16(start);
-  if (order !== 0x4949 && order !== 0x4d4d) return undefined;
+  if (order !== 0x4949 && order !== 0x4d4d) return { orientation: 1 };
   const little = order === 0x4949;
   const end = start + length;
   const u16 = (at: number) => view.getUint16(at, little);
@@ -73,7 +89,12 @@ function readTiff(view: DataView, start: number, length: number): Date | undefin
   const ifd0 = u32(start + 4);
   const exifEntry = findEntry(ifd0, TAG_EXIF_IFD);
   const original = exifEntry !== undefined ? readDate(u32(exifEntry + 8), TAG_DATETIME_ORIGINAL) : undefined;
-  return original ?? readDate(ifd0, TAG_DATETIME);
+  const orientationEntry = findEntry(ifd0, TAG_ORIENTATION);
+  const rawOrientation = orientationEntry !== undefined ? u16(orientationEntry + 8) : 1;
+  return {
+    dateTaken: original ?? readDate(ifd0, TAG_DATETIME),
+    orientation: rawOrientation >= 1 && rawOrientation <= 8 ? rawOrientation : 1,
+  };
 }
 
 /** "2026:11:07 14:03:22" (camera local time) → Date. */

@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { processPhoto, type ProcessedPhoto } from '../../photos/process.ts';
+import { processPhoto, rotateJpeg, type ProcessedPhoto } from '../../photos/process.ts';
 import { BlobImage } from '../../ui/BlobImage.tsx';
 
 export const MAX_PHOTOS = 4;
@@ -19,6 +19,23 @@ export function PhotoPicker({ photos, onChange }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const room = MAX_PHOTOS - photos.length;
+
+  const rotate = async (photo: PickedPhoto) => {
+    setBusy(true);
+    try {
+      const [full, thumb, ai] = await Promise.all([
+        rotateJpeg(photo.full, 0.85),
+        rotateJpeg(photo.thumb, 0.8),
+        rotateJpeg(photo.ai, 0.8),
+      ]);
+      const rotated = { ...photo, full: full.blob, thumb: thumb.blob, ai: ai.blob, width: full.width, height: full.height };
+      onChange(photos.map((p) => (p.key === photo.key ? rotated : p)));
+    } catch {
+      setError('Couldn’t rotate that photo.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const add = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = [...(e.target.files ?? [])].slice(0, room);
@@ -50,6 +67,15 @@ export function PhotoPicker({ photos, onChange }: Props) {
                 onClick={() => onChange(photos.filter((x) => x.key !== p.key))}
               >
                 ×
+              </button>
+              <button
+                type="button"
+                className="photo-rotate"
+                aria-label={`Rotate photo ${i + 1}`}
+                disabled={busy}
+                onClick={() => void rotate(p)}
+              >
+                ↻
               </button>
             </li>
           ))}

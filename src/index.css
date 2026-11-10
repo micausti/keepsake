@@ -924,3 +924,17 @@ a.outline-link {
 .backup-controls {
   margin: 0.5rem 0;
 }
+
+.photo-rotate {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  min-height: 28px;
+  width: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}

@@ -71,7 +71,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByTestId('library-input').setInputFiles({
     name: 'coat.jpg',
     mimeType: 'image/jpeg',
-    buffer: await makePhoto(page),
+    buffer: await makePhoto(page, { orientation: 6 }), // portrait, stored sideways like an iPhone
   });
   await expect(page.getByAltText('Photo 1')).toBeVisible();
   await page.getByRole('button', { name: 'Fill in details with AI' }).click();
@@ -89,10 +89,11 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByRole('button', { name: 'Save item' }).click();
   await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
 
-  // What was stored: resized, no EXIF or GPS, date taken kept.
+  // What was stored: upright portrait (red half on top), resized, no EXIF or GPS, date taken kept.
   const [photo] = await storedPhotos(page);
-  expect(photo?.size).toEqual([2000, 1500]);
-  expect(photo?.thumbSize).toEqual([400, 300]);
+  expect(photo?.size).toEqual([1500, 2000]);
+  expect(photo?.thumbSize).toEqual([300, 400]);
+  expect(photo?.colours).toEqual({ top: 'r', bottom: 'b', left: expect.any(String), right: expect.any(String) });
   expect(photo?.hasExif).toBe(false);
   expect(photo?.text.includes(GPS_MARKER)).toBe(false);
   expect(photo?.takenAt.startsWith('2025-06-14')).toBe(true);
@@ -117,6 +118,15 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   // Item page: add an update and change status.
   await page.getByText('Navy padded coat').click();
   await expect(page.getByRole('heading', { name: 'Navy padded coat' })).toBeVisible();
+
+  // Rotate: a quarter turn clockwise puts the red half on the right.
+  await page.getByRole('button', { name: 'Rotate ↻' }).click();
+  await expect(page.getByRole('button', { name: 'Rotate ↻' })).toBeEnabled();
+  await expect.poll(async () => (await storedPhotos(page))[0]?.size).toEqual([2000, 1500]);
+  const [rotated] = await storedPhotos(page);
+  expect(rotated?.thumbSize).toEqual([400, 300]);
+  expect(rotated?.colours).toEqual({ top: expect.any(String), bottom: expect.any(String), left: 'b', right: 'r' });
+
   await page.getByRole('link', { name: 'Add update' }).click();
   await page.getByLabel('Condition now').selectOption('good');
   await page.getByLabel('Note').fill('Small mark on the sleeve');

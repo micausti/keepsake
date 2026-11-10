@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { db } from '../db/db.ts';
-import { deleteItem, handDown, setCoverPhoto, setStatus } from '../db/items.ts';
+import { deleteItem, handDown, rotatePhoto, setCoverPhoto, setStatus } from '../db/items.ts';
 import { GONE_STATUSES } from '../domain/filter.ts';
 import { nowAndNext } from '../domain/gaps.ts';
 import { formatDate } from '../domain/dates.ts';
@@ -141,9 +141,10 @@ export function ItemPage({ id }: { id: string }) {
     () => db.events.where('itemId').equals(id).sortBy('at').then((list) => list.reverse()),
     [id],
   );
-  const children = useLiveQuery(() => db.children.toArray());
+  const children = useLiveQuery(() => db.children.orderBy('name').toArray());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<Photo | null>(null);
+  const [rotating, setRotating] = useState(false);
 
   if (item === null) {
     return (
@@ -202,11 +203,24 @@ export function ItemPage({ id }: { id: string }) {
           </button>
           <div className="gallery-meta">
             <span className="muted">Taken {formatDate(shown.takenAt)}</span>
-            {shown.id !== item.coverPhotoId && (
-              <button type="button" className="secondary link" onClick={() => void setCoverPhoto(item.id, shown.id)}>
-                Use as main photo
+            <div className="button-row">
+              <button
+                type="button"
+                className="secondary link"
+                disabled={rotating}
+                onClick={() => {
+                  setRotating(true);
+                  void rotatePhoto(shown.id).finally(() => setRotating(false));
+                }}
+              >
+                {rotating ? 'Rotating…' : 'Rotate ↻'}
               </button>
-            )}
+              {shown.id !== item.coverPhotoId && (
+                <button type="button" className="secondary link" onClick={() => void setCoverPhoto(item.id, shown.id)}>
+                  Use as main photo
+                </button>
+              )}
+            </div>
           </div>
           {photos.length > 1 && (
             <ul className="photo-strip">
