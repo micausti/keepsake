@@ -51,6 +51,8 @@ describe('computeGaps', () => {
     item({ category: 'tops', size: '2-3y', childId: 'zoe', status: 'sold' }), // gone: doesn't count
     item({ category: 'tops', size: '2-3y', childId: 'zoe', status: 'outgrown' }), // outgrown: doesn't count
     item({ category: 'tops', size: '2-3y', childId: 'zoe', status: 'lost' }), // lost: doesn't count
+    item({ category: 'tops', size: '2-3y', childId: 'zoe', status: 'keepsake' }), // keepsake: not for wearing
+    item({ category: 'tops', size: '3-4y', childId: 'arlo', status: 'keepsake' }), // sibling's keepsake: not a hand-me-down
     item({ category: 'tops', size: '3-4y', childId: 'arlo', status: 'lost' }), // sibling's lost: not a hand-me-down
     item({ category: 'tops', size: '3-4y', childId: 'arlo', status: 'outgrown' }), // sibling's: hand-me-down
     item({ category: 'tops', size: '3-4y', childId: 'arlo', status: 'in_use' }), // sibling still wearing it
@@ -92,6 +94,7 @@ describe('handDownSuggestions', () => {
       item({ title: 'Too small', category: 'tops', size: '12-18m', childId: 'arlo', status: 'outgrown' }),
       item({ title: 'Toy', category: 'toys', size: '3y+', childId: 'arlo', status: 'outgrown' }),
       item({ title: 'Lost coat', category: 'outerwear', size: '3-4y', childId: 'arlo', status: 'lost' }),
+      item({ title: 'Christening gown', category: 'dresses', size: '2-3y', childId: 'arlo', status: 'keepsake' }),
     ];
     expect(handDownSuggestions([arlo, zoe], items).map((s) => [s.item.title, s.to.id, s.when])).toEqual([
       ['Now wellies', 'zoe', 'now'],

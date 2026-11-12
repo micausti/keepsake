@@ -25,6 +25,17 @@ describe('handDown', () => {
   });
 });
 
+describe('handDown a keepsake', () => {
+  it('keeps it a keepsake', async () => {
+    const item = await createItem(
+      { ...emptyDraft([]), title: 'First shoes', category: 'shoes', childId: 'arlo', status: 'keepsake' },
+      [],
+    );
+    await handDown(item.id, 'zoe', true);
+    expect(await db.items.get(item.id)).toMatchObject({ childId: 'zoe', status: 'keepsake' });
+  });
+});
+
 describe('markOutgrown', () => {
   it('marks each item outgrown with a timeline entry', async () => {
     const a = await createItem({ ...emptyDraft([]), title: 'A', category: 'tops' }, []);

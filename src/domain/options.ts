@@ -18,6 +18,8 @@ export const ITEM_STATUSES = [
   { id: 'in_use', label: 'In use' },
   { id: 'outgrown', label: 'Outgrown' },
   { id: 'storage', label: 'In storage' },
+  // Kept for good for sentimental reasons: not worn, passed on or sold.
+  { id: 'keepsake', label: 'Keepsake' },
   { id: 'hand_down', label: 'To hand down' },
   { id: 'to_sell', label: 'To sell' },
   { id: 'listed', label: 'Listed' },

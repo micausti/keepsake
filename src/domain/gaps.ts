@@ -27,9 +27,9 @@ export const DEFAULT_TARGETS: GapTargets = {
 /** Categories that gaps can be worked out for (they have a clothing or shoe size). */
 export const GAP_CATEGORIES = CATEGORIES.filter((c) => c.sizeSystem === 'clothing' || c.sizeSystem === 'shoes');
 
-/** Statuses for things that can still be worn by the child they belong to. */
+/** Statuses for things that can still be worn by the child they belong to (not keepsakes). */
 const WEARABLE: readonly ItemStatus[] = ['in_use', 'storage', 'hand_down'];
-/** Statuses for a sibling's things that could be handed down. */
+/** Statuses for a sibling's things that could be handed down (not keepsakes). */
 const PASSABLE: readonly ItemStatus[] = ['outgrown', 'hand_down', 'storage'];
 
 export const targetFor = (targets: GapTargets, category: CategoryId) =>
