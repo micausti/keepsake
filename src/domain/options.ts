@@ -88,13 +88,15 @@ export const CATEGORIES = [
   { id: 'underwear', label: 'Underwear & socks', group: 'Clothes', sizeSystem: 'clothing' },
   { id: 'school_uniform', label: 'School uniform', group: 'Clothes', sizeSystem: 'clothing' },
   { id: 'fancy_dress', label: 'Fancy dress', group: 'Clothes', sizeSystem: 'clothing' },
-  { id: 'accessories', label: 'Hats, gloves & accessories', group: 'Clothes', sizeSystem: 'none' },
+  // Kept as 'accessories' so existing items stay put; now sized by age like other clothes.
+  { id: 'accessories', label: 'Hats, gloves & scarves', group: 'Clothes', sizeSystem: 'clothing' },
   { id: 'shoes', label: 'Shoes', group: 'Shoes', sizeSystem: 'shoes' },
   { id: 'wellies_boots', label: 'Wellies & boots', group: 'Shoes', sizeSystem: 'shoes' },
   { id: 'toys', label: 'Toys', group: 'Toys & play', sizeSystem: 'toy_age' },
   { id: 'games_puzzles', label: 'Games & puzzles', group: 'Toys & play', sizeSystem: 'toy_age' },
   { id: 'books', label: 'Books', group: 'Toys & play', sizeSystem: 'toy_age' },
   { id: 'outdoor', label: 'Outdoor & ride-ons', group: 'Toys & play', sizeSystem: 'toy_age' },
+  { id: 'bags_accessories', label: 'Bags & other accessories', group: 'Other', sizeSystem: 'none' },
   { id: 'baby_gear', label: 'Baby gear', group: 'Other', sizeSystem: 'none' },
   { id: 'other', label: 'Other', group: 'Other', sizeSystem: 'none' },
 ] as const satisfies readonly CategoryOption[];

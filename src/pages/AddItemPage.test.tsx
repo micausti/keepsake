@@ -123,3 +123,18 @@ describe('Add item', () => {
     await waitFor(async () => expect(await db.items.count()).toBe(0));
   });
 });
+
+describe('Hats', () => {
+  it('have an age size; bags have none', async () => {
+    await openAddPage();
+    // An earlier test may have left a draft open (drafts survive switching tabs).
+    const fillIn = screen.queryByRole('button', { name: 'Fill in myself' });
+    if (fillIn) fireEvent.click(fillIn);
+    fireEvent.change(await screen.findByLabelText('Category'), { target: { value: 'accessories' } });
+    fireEvent.change(screen.getByLabelText('Size'), { target: { value: '2-3y' } });
+    expect((screen.getByLabelText('Size') as HTMLSelectElement).value).toBe('2-3y');
+
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'bags_accessories' } });
+    expect(screen.queryByLabelText('Size')).toBeNull();
+  });
+});

@@ -32,6 +32,8 @@ describe('option lists', () => {
     expect(categoryById('outerwear').sizeSystem).toBe('clothing');
     expect(categoryById('wellies_boots').sizeSystem).toBe('shoes');
     expect(categoryById('toys').sizeSystem).toBe('toy_age');
+    expect(categoryById('accessories')).toMatchObject({ label: 'Hats, gloves & scarves', sizeSystem: 'clothing' });
+    expect(categoryById('bags_accessories')).toMatchObject({ label: 'Bags & other accessories', sizeSystem: 'none' });
   });
 });
 

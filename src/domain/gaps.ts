@@ -19,6 +19,7 @@ export const DEFAULT_TARGETS: GapTargets = {
   underwear: 0,
   school_uniform: 0,
   fancy_dress: 0,
+  accessories: 0,
   shoes: 2,
   wellies_boots: 1,
 };
