@@ -120,6 +120,8 @@ const TAG_WORDS: Partial<Record<CategoryId, string>> = {
   swimwear: 'kidsswimwear',
   school_uniform: 'schooluniform',
   fancy_dress: 'fancydress',
+  accessories: 'kidshats',
+  bags_accessories: 'kidsbag',
   shoes: 'kidsshoes',
   wellies_boots: 'kidswellies',
   toys: 'kidstoys',

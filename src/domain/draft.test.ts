@@ -82,6 +82,8 @@ describe('sizeFitsCategory', () => {
     expect(sizeFitsCategory('tops', '2-3y')).toBe(true);
     expect(sizeFitsCategory('tops', 'k6')).toBe(false);
     expect(sizeFitsCategory('toys', '3y+')).toBe(true);
+    expect(sizeFitsCategory('accessories', '2-3y')).toBe(true);
+    expect(sizeFitsCategory('bags_accessories', '2-3y')).toBe(false);
     expect(sizeFitsCategory('', '2-3y')).toBe(false);
   });
 });
