@@ -243,7 +243,8 @@ export async function handDown(
   await database.transaction('rw', database.items, database.events, async () => {
     const item = await requireItem(itemId, database);
     if (item.childId === toChildId) return;
-    const status: ItemStatus = fitsNow ? 'in_use' : 'storage';
+    // A keepsake stays a keepsake; anything else is in use if it fits, else stored.
+    const status: ItemStatus = item.status === 'keepsake' ? 'keepsake' : fitsNow ? 'in_use' : 'storage';
     await database.items.put({ ...item, childId: toChildId, status, updatedAt: timestamp });
     await database.events.add({
       id: newId(),

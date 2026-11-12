@@ -29,14 +29,16 @@ const items = [
   item({ title: 'Wooden train set', category: 'toys', size: '3y+', seasons: [], status: 'storage', description: 'Brio-style track' }),
   item({ title: 'Striped top', category: 'tops', size: '12-18m', childId: 'zoe', status: 'hand_down', condition: 'very_good' }),
   item({ title: 'Blue mitten', category: 'accessories', status: 'lost' }),
+  item({ title: 'First shoes', category: 'shoes', childId: 'arlo', status: 'keepsake' }),
 ];
 
 const run = (q: Partial<ItemQuery>) => filterItems(items, { ...DEFAULT_QUERY, ...q }, children).map((i) => i.title);
 
 describe('filterItems', () => {
   it('hides sold, donated and lost items by default, newest first', () => {
-    expect(run({})).toEqual(['Striped top', 'Wooden train set', 'Red wellies', 'Navy padded coat']);
-    expect(run({ status: '' })).toHaveLength(6);
+    expect(run({})).toEqual(['First shoes', 'Striped top', 'Wooden train set', 'Red wellies', 'Navy padded coat']);
+    expect(run({ status: '' })).toHaveLength(7);
+    expect(run({ status: 'keepsake' })).toEqual(['First shoes']);
     expect(run({ status: 'sold' })).toEqual(['Floral dress']);
     expect(run({ status: 'lost' })).toEqual(['Blue mitten']);
   });
@@ -53,7 +55,7 @@ describe('filterItems', () => {
   });
 
   it('filters by child, including unassigned', () => {
-    expect(run({ childId: 'arlo' })).toEqual(['Red wellies', 'Navy padded coat']);
+    expect(run({ childId: 'arlo' })).toEqual(['First shoes', 'Red wellies', 'Navy padded coat']);
     expect(run({ childId: 'none' })).toEqual(['Wooden train set']);
   });
 
@@ -64,7 +66,7 @@ describe('filterItems', () => {
   });
 
   it('sorts by name and by size', () => {
-    expect(run({ sort: 'name' })).toEqual(['Navy padded coat', 'Red wellies', 'Striped top', 'Wooden train set']);
+    expect(run({ sort: 'name' })).toEqual(['First shoes', 'Navy padded coat', 'Red wellies', 'Striped top', 'Wooden train set']);
     expect(run({ category: 'tops', sort: 'size', status: '' })).toEqual(['Striped top']);
     const tops = [
       item({ title: 'B', category: 'tops', size: '4-5y' }),
