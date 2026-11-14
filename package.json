@@ -19,7 +19,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "1.6.0",
+    "@anthropic-ai/sdk": "1.8.0",
     "dexie": "4.4.7",
     "dexie-react-hooks": "4.4.0",
     "react": "19.3.1",
