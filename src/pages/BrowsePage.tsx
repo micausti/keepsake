@@ -100,7 +100,7 @@ export function BrowsePage() {
 
       {filtersOpen && (
         <section id="filters" className="card filters" aria-label="Filters">
-          <Select id="f-child" label="Child" value={query.childId} onChange={(childId) => set({ childId })}>
+          <Select id="f-child" label="Who" value={query.childId} onChange={(childId) => set({ childId })}>
             <option value="">Anyone</option>
             {children.map((c) => (
               <option key={c.id} value={c.id}>

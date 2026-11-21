@@ -42,7 +42,7 @@ export default defineConfig({
         id: BASE,
         name: 'Keepsake',
         short_name: 'Keepsake',
-        description: "Inventory of the kids' clothes and toys.",
+        description: "Inventory of the family's clothes and toys.",
         lang: 'en-GB',
         start_url: BASE,
         scope: BASE,

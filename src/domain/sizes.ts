@@ -97,3 +97,21 @@ export function clothingSizeForAge(birthDate: string, today = new Date()): strin
   const years = Math.min(Math.floor(months / 12), 15);
   return `${years}-${years + 1}y`;
 }
+
+/**
+ * Common adult sizes, offered as suggestions only: adults' sizes are free text
+ * ("M", "UK 10", "W30 L32", "10 Petite") because brands label them so
+ * differently, and nothing needs to know which size comes next.
+ */
+export const ADULT_CLOTHING_SUGGESTIONS: readonly string[] = [
+  'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One size',
+  ...[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24].map((n) => `UK ${n}`),
+];
+
+export const ADULT_SHOE_SUGGESTIONS: readonly string[] = Array.from({ length: 23 }, (_, i) => 2 + i / 2).map(
+  (n) => `UK ${n}`,
+);
+
+export function adultSizeSuggestions(system: SizeSystem): readonly string[] {
+  return system === 'clothing' ? ADULT_CLOTHING_SUGGESTIONS : system === 'shoes' ? ADULT_SHOE_SUGGESTIONS : [];
+}

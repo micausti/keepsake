@@ -5,9 +5,14 @@ export type Timestamp = string;
 /** Calendar date, e.g. "2026-11-07". */
 export type IsoDate = string;
 
+/**
+ * A person whose things are tracked. Named Child for history; adults (e.g. the
+ * owner) are people too, marked kind: 'adult'. Missing kind means a child.
+ */
 export interface Child {
   id: string;
   name: string;
+  kind?: 'child' | 'adult';
   birthDate?: IsoDate;
   /** Current UK clothing size id (see CLOTHING_SIZES). */
   clothingSize?: string;
@@ -78,3 +83,10 @@ export interface ItemEvent {
   fromChildId?: string;
   toChildId?: string;
 }
+
+export type Person = Child;
+
+export const isAdult = (person: Pick<Child, 'kind'> | undefined): boolean => person?.kind === 'adult';
+
+/** Children only (adults don't grow, so Gaps and passing on ignore them). */
+export const childrenOnly = <T extends Pick<Child, 'kind'>>(people: T[]): T[] => people.filter((p) => !isAdult(p));

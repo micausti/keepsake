@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { addChild, deleteChild, updateChild, type ChildInput } from '../../db/children.ts';
-import type { Child } from '../../domain/types.ts';
+import { isAdult, type Child } from '../../domain/types.ts';
 import {
   CLOTHING_SIZES,
   SHOE_SIZES,
@@ -14,14 +14,17 @@ const EMPTY: ChildInput = { name: '', birthDate: '', clothingSize: '', shoeSize:
 
 function ChildForm({
   initial,
+  kind = 'child',
   onDone,
   idPrefix,
 }: {
   initial?: Child;
+  kind?: 'child' | 'adult';
   onDone: () => void;
   idPrefix: string;
 }) {
-  const [form, setForm] = useState<ChildInput>(initial ? { ...EMPTY, ...initial } : EMPTY);
+  const [form, setForm] = useState<ChildInput>(initial ? { ...EMPTY, ...initial } : { ...EMPTY, kind });
+  const adult = form.kind === 'adult';
   const [error, setError] = useState<string | null>(null);
   const set = (patch: Partial<ChildInput>) => setForm((f) => ({ ...f, ...patch }));
   const today = new Date().toISOString().slice(0, 10);
@@ -50,38 +53,44 @@ function ChildForm({
           required
         />
       </div>
-      <div className="field">
-        <label htmlFor={`${idPrefix}-dob`}>Date of birth (optional)</label>
-        <input
-          id={`${idPrefix}-dob`}
-          type="date"
-          max={today}
-          value={form.birthDate ?? ''}
-          onChange={(e) => set({ birthDate: e.target.value })}
-        />
-      </div>
-      <SizeSelect
-        id={`${idPrefix}-clothing`}
-        label="Clothing size now"
-        options={CLOTHING_SIZES}
-        value={form.clothingSize ?? ''}
-        onChange={(clothingSize) => set({ clothingSize })}
-      />
-      {suggested && suggested !== form.clothingSize && (
-        <button type="button" className="secondary link" onClick={() => set({ clothingSize: suggested })}>
-          Use {sizeLabel('clothing', suggested)} (matches their age)
-        </button>
+      {adult ? (
+        <p className="muted">Adults just need a name. Sizes are added on each item.</p>
+      ) : (
+        <>
+          <div className="field">
+            <label htmlFor={`${idPrefix}-dob`}>Date of birth (optional)</label>
+            <input
+              id={`${idPrefix}-dob`}
+              type="date"
+              max={today}
+              value={form.birthDate ?? ''}
+              onChange={(e) => set({ birthDate: e.target.value })}
+            />
+          </div>
+          <SizeSelect
+            id={`${idPrefix}-clothing`}
+            label="Clothing size now"
+            options={CLOTHING_SIZES}
+            value={form.clothingSize ?? ''}
+            onChange={(clothingSize) => set({ clothingSize })}
+          />
+          {suggested && suggested !== form.clothingSize && (
+            <button type="button" className="secondary link" onClick={() => set({ clothingSize: suggested })}>
+              Use {sizeLabel('clothing', suggested)} (matches their age)
+            </button>
+          )}
+          <SizeSelect
+            id={`${idPrefix}-shoes`}
+            label="Shoe size now"
+            options={SHOE_SIZES}
+            value={form.shoeSize ?? ''}
+            onChange={(shoeSize) => set({ shoeSize })}
+          />
+        </>
       )}
-      <SizeSelect
-        id={`${idPrefix}-shoes`}
-        label="Shoe size now"
-        options={SHOE_SIZES}
-        value={form.shoeSize ?? ''}
-        onChange={(shoeSize) => set({ shoeSize })}
-      />
       {error && <p className="warning">{error}</p>}
       <div className="button-row">
-        <button type="submit">{initial ? 'Save' : 'Add child'}</button>
+        <button type="submit">{initial ? 'Save' : adult ? 'Add adult' : 'Add child'}</button>
         <button type="button" className="secondary" onClick={onDone}>
           Cancel
         </button>
@@ -91,7 +100,7 @@ function ChildForm({
 }
 
 export function ChildrenSection({ items }: { items: Child[] }) {
-  const [editing, setEditing] = useState<string | 'new' | null>(null);
+  const [editing, setEditing] = useState<string | 'new-child' | 'new-adult' | null>(null);
 
   const remove = async (child: Child) => {
     const ok = window.confirm(
@@ -102,8 +111,8 @@ export function ChildrenSection({ items }: { items: Child[] }) {
 
   return (
     <section className="card" aria-labelledby="children-settings-heading">
-      <h2 id="children-settings-heading">Children</h2>
-      {items.length === 0 && editing !== 'new' && <p className="muted">No children added yet.</p>}
+      <h2 id="children-settings-heading">People</h2>
+      {items.length === 0 && !editing && <p className="muted">Add your children, and yourself to track your own things.</p>}
       <ul className="plain-list">
         {items.map((child) =>
           editing === child.id ? (
@@ -115,13 +124,15 @@ export function ChildrenSection({ items }: { items: Child[] }) {
               <div>
                 <strong>{child.name}</strong>
                 <div className="muted">
-                  {[
-                    child.birthDate && formatAge(child.birthDate),
-                    sizeLabel('clothing', child.clothingSize),
-                    child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || 'No sizes set'}
+                  {isAdult(child)
+                    ? 'Adult'
+                    : [
+                        child.birthDate && formatAge(child.birthDate),
+                        sizeLabel('clothing', child.clothingSize),
+                        child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'No sizes set'}
                 </div>
               </div>
               <div className="button-row">
@@ -136,12 +147,21 @@ export function ChildrenSection({ items }: { items: Child[] }) {
           ),
         )}
       </ul>
-      {editing === 'new' ? (
-        <ChildForm idPrefix="new-child" onDone={() => setEditing(null)} />
+      {editing === 'new-child' || editing === 'new-adult' ? (
+        <ChildForm
+          idPrefix={editing}
+          kind={editing === 'new-adult' ? 'adult' : 'child'}
+          onDone={() => setEditing(null)}
+        />
       ) : (
-        <button type="button" onClick={() => setEditing('new')}>
-          Add a child
-        </button>
+        <div className="button-row">
+          <button type="button" onClick={() => setEditing('new-child')}>
+            Add a child
+          </button>
+          <button type="button" className="secondary outline" onClick={() => setEditing('new-adult')}>
+            Add an adult (e.g. you)
+          </button>
+        </div>
       )}
     </section>
   );
