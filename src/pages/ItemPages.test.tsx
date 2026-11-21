@@ -48,19 +48,20 @@ describe('Browse', () => {
     render(<App />);
     await go('#/items');
 
-    expect(await screen.findByText('Navy padded coat')).toBeDefined();
-    expect(screen.getByText('Red wellies')).toBeDefined();
-    expect(screen.queryByText('Old dress')).toBeNull();
+    const tile = (name: string) => screen.queryByRole('link', { name });
+    expect(await screen.findByRole('link', { name: 'Navy padded coat' })).toBeDefined();
+    expect(tile('Red wellies')).not.toBeNull();
+    expect(tile('Old dress')).toBeNull();
     expect(screen.getByRole('status').textContent).toBe('2 items of 3');
 
     fireEvent.change(screen.getByLabelText('Search items'), { target: { value: 'boden' } });
-    expect(screen.queryByText('Red wellies')).toBeNull();
-    expect(screen.getByText('Navy padded coat')).toBeDefined();
+    expect(tile('Red wellies')).toBeNull();
+    expect(tile('Navy padded coat')).not.toBeNull();
 
     fireEvent.change(screen.getByLabelText('Search items'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: '' } });
-    expect(await screen.findByText('Old dress')).toBeDefined();
+    expect(await screen.findByRole('link', { name: 'Old dress' })).toBeDefined();
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'wellies_boots' } });
     expect(screen.getByRole('status').textContent).toBe('1 item of 3');
     expect(screen.getByRole('button', { name: 'Filters (2)' })).toBeDefined();
@@ -69,12 +70,16 @@ describe('Browse', () => {
     expect(screen.getByRole('status').textContent).toBe('2 items of 3');
   });
 
-  it('opens an item from the list', async () => {
+  it('shows items as a photo grid that opens each item', async () => {
     const { coat } = await seed();
     render(<App />);
     await go('#/items');
-    const link = (await screen.findByText('Navy padded coat')).closest('a');
-    expect(link?.getAttribute('href')).toBe(`#/item/${coat.id}`);
+    const grid = await screen.findByRole('list', { name: 'Items' });
+    const link = await within(grid).findByRole('link', { name: 'Navy padded coat' });
+    expect(link.getAttribute('href')).toBe(`#/item/${coat.id}`);
+    // With a photo the tile is just the picture; without one it shows the name.
+    expect(within(link).queryByText('Navy padded coat')).toBeNull();
+    expect(within(grid).getByRole('link', { name: 'Red wellies' }).textContent).toBe('Red wellies');
   });
 });
 

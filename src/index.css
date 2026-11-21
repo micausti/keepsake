@@ -938,3 +938,53 @@ a.outline-link {
   font-size: 1rem;
   line-height: 1;
 }
+
+/* --- Items grid ------------------------------------------------------------ */
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.item-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--border);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.item-tile-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-tile-photo.placeholder {
+  background: var(--border);
+}
+
+.item-tile-name {
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.item-tile:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}

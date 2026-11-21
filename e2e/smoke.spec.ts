@@ -119,10 +119,14 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByRole('link', { name: 'Items', exact: true }).click();
   await expect(page.locator('.result-count')).toHaveText('2 items');
   await page.getByLabel('Search items').fill('navy');
-  await expect(page.locator('.item-row strong')).toHaveText(['Navy padded coat']);
+  const grid = page.getByRole('list', { name: 'Items' });
+  await expect(grid.locator('.item-tile')).toHaveCount(1);
+  await expect(grid.getByRole('link', { name: 'Navy padded coat' })).toBeVisible();
+  // The tile shows the real photo once it scrolls into view.
+  await expect(grid.locator('img.item-tile-photo')).toHaveAttribute('src', /^blob:/);
 
   // Item page: add an update and change status.
-  await page.getByText('Navy padded coat').click();
+  await grid.getByRole('link', { name: 'Navy padded coat' }).click();
   await expect(page.getByRole('heading', { name: 'Navy padded coat' })).toBeVisible();
 
   // Rotate: a quarter turn clockwise puts the red half on the right.
@@ -186,10 +190,10 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
 
   await page.getByRole('link', { name: 'Items', exact: true }).click();
   await page.getByLabel('Search items').fill('dino');
-  await page.locator('.item-row', { hasText: 'Dino top' }).click();
+  await page.getByRole('list', { name: 'Items' }).getByRole('link', { name: 'Dino top' }).click();
   await page.getByRole('button', { name: 'Delete item' }).click();
   await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();
-  await expect(page.locator('.item-row', { hasText: 'Dino top' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Dino top' })).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByTestId('restore-input').setInputFiles(backupPath);
@@ -206,7 +210,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByRole('link', { name: 'Items', exact: true }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
   await page.getByLabel('Status').selectOption('');
-  await expect(page.locator('.item-row')).toHaveCount(2);
+  await expect(page.locator('.item-tile')).toHaveCount(2);
   await context.setOffline(false);
 
   checkProblems();

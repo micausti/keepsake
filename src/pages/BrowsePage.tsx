@@ -18,7 +18,7 @@ import {
   type CategoryId,
 } from '../domain/options.ts';
 import { sizesFor } from '../domain/sizes.ts';
-import { ItemRow } from '../ui/ItemRow.tsx';
+import { ItemTile } from '../ui/ItemTile.tsx';
 import { hrefFor } from '../ui/router.ts';
 
 const GROUPS = [...new Set(CATEGORIES.map((c) => c.group))];
@@ -206,13 +206,11 @@ export function BrowsePage() {
           <p className="muted">Nothing matches. Try fewer words or clear the filters.</p>
         </section>
       ) : (
-        <section className="card">
-          <ul className="plain-list">
-            {results.map((item) => (
-              <ItemRow key={item.id} item={item} children={children} />
-            ))}
-          </ul>
-        </section>
+        <ul className="item-grid" aria-label="Items">
+          {results.map((item) => (
+            <ItemTile key={item.id} item={item} />
+          ))}
+        </ul>
       )}
     </>
   );
