@@ -64,9 +64,9 @@ describe('Adult items', () => {
     await go('#/items');
     fireEvent.click(await screen.findByRole('button', { name: 'Filters' }));
     fireEvent.change(screen.getByLabelText('Who'), { target: { value: me.id } });
-    expect(await screen.findByText('Black jeans')).toBeDefined();
-    expect(screen.queryByText('Dino top')).toBeNull();
-    expect(screen.getByText(/Trousers & leggings · W30 L32 · Michelle/)).toBeDefined();
+    expect(await screen.findByRole('link', { name: 'Black jeans' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Dino top' })).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('1 item of 2');
   });
 
   it('keeps adults out of Gaps and passing on', async () => {
