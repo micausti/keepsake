@@ -1,13 +1,18 @@
 import type { Child } from '../domain/types.ts';
 import { db, newId, now, type KeepsakeDB } from './db.ts';
 
-export type ChildInput = Pick<Child, 'name' | 'birthDate' | 'clothingSize' | 'shoeSize'>;
+export type ChildInput = Pick<Child, 'name' | 'birthDate' | 'clothingSize' | 'shoeSize' | 'kind'>;
 
 function clean(input: ChildInput): ChildInput {
   const name = input.name.trim();
   if (!name) throw new Error('Name is required');
+  if (input.kind === 'adult') {
+    // Adults don't need an age or current sizes: nothing grows into a next size.
+    return { name, kind: 'adult', birthDate: undefined, clothingSize: undefined, shoeSize: undefined };
+  }
   return {
     name,
+    kind: 'child',
     birthDate: input.birthDate || undefined,
     clothingSize: input.clothingSize || undefined,
     shoeSize: input.shoeSize || undefined,

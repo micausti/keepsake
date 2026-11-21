@@ -70,7 +70,7 @@ describe('Add item', () => {
     const title = (await screen.findByLabelText('Name')) as HTMLInputElement;
     expect(title.value).toBe('Navy padded coat');
     expect(vi.mocked(describeItem)).toHaveBeenCalledWith('sk-ant-test', 'claude-sonnet-5-5', [expect.any(Blob)]);
-    expect((screen.getByLabelText('Child') as HTMLSelectElement).value).toBe(arlo.id);
+    expect((screen.getByLabelText('Who') as HTMLSelectElement).value).toBe(arlo.id);
     expect((screen.getByLabelText('Size') as HTMLSelectElement).value).toBe('2-3y');
     expect(screen.getByLabelText(/Brand/).closest('.field')?.textContent).toContain('check');
 

@@ -16,7 +16,7 @@ import {
 } from '../domain/gaps.ts';
 import { SEASONS, categoryById, type CategoryId, type Season } from '../domain/options.ts';
 import { sizeLabel } from '../domain/sizes.ts';
-import type { Child, Item } from '../domain/types.ts';
+import { childrenOnly, isAdult, type Child, type Item } from '../domain/types.ts';
 import { hrefFor, navigate } from '../ui/router.ts';
 import { presetBrowse } from './BrowsePage.tsx';
 
@@ -194,12 +194,16 @@ function Targets({ targets }: { targets: GapTargets }) {
 }
 
 export function GapsPage() {
-  const children = useLiveQuery(() => db.children.orderBy('name').toArray());
-  const items = useLiveQuery(() => db.items.toArray());
+  const people = useLiveQuery(() => db.children.orderBy('name').toArray());
+  const allItems = useLiveQuery(() => db.items.toArray());
   const settings = useLiveQuery(() => getSettings());
   const [season, setSeason] = useState<Season | ''>(rememberedSeason);
 
-  if (!children || !items || !settings) return null;
+  if (!people || !allItems || !settings) return null;
+  // Gaps is about children growing into sizes: adults and their things are left out.
+  const children = childrenOnly(people);
+  const adultIds = new Set(people.filter(isAdult).map((p) => p.id));
+  const items = allItems.filter((i) => !i.childId || !adultIds.has(i.childId));
   const targets = settings.gapTargets ?? DEFAULT_TARGETS;
 
   return (
@@ -211,7 +215,7 @@ export function GapsPage() {
 
       {children.length === 0 ? (
         <section className="card">
-          <p>Add your children and their sizes first.</p>
+          <p>Gaps works out what each child has in their size now and next. Add a child and their sizes first.</p>
           <a className="button" href={hrefFor('settings')}>
             Open Settings
           </a>

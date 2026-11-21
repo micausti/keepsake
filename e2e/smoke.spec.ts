@@ -62,6 +62,12 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
     await page.getByRole('button', { name: 'Add child' }).click();
     await expect(page.locator('.child-row strong', { hasText: name })).toBeVisible();
   }
+  // An adult (the owner) alongside the children; adults just need a name.
+  await page.getByRole('button', { name: 'Add an adult (e.g. you)' }).click();
+  await page.getByLabel('Name').fill('Michelle');
+  await page.getByRole('button', { name: 'Add adult' }).click();
+  await expect(page.locator('.child-row', { hasText: 'Michelle' })).toContainText('Adult');
+
   await page.getByLabel('API key').fill(`sk-ant-api03-${'x'.repeat(60)}TEST`);
   await page.getByRole('button', { name: 'Save key' }).click();
   await expect(page.getByText('sk-ant-api03…TEST')).toBeVisible();
@@ -77,7 +83,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByRole('button', { name: 'Fill in details with AI' }).click();
   await expect(page.getByLabel('Name')).toHaveValue('Navy padded coat');
   await expect(page.getByLabel('Size')).toHaveValue('2-3y');
-  await expect(page.getByLabel('Child').locator('option:checked')).toHaveText('Zoe');
+  await expect(page.getByLabel('Who').locator('option:checked')).toHaveText('Zoe');
 
   // What went to the API: one small JPEG with no metadata.
   const content = (apiRequest?.messages as { content: { type: string; source?: { data: string } }[] }[])[0]?.content;
@@ -104,7 +110,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByLabel('Name').fill('Dino top');
   await page.getByLabel('Category').selectOption('tops');
   await page.getByLabel('Size').selectOption('3-4y');
-  await page.getByLabel('Child').selectOption({ label: 'Arlo' });
+  await page.getByLabel('Who').selectOption({ label: 'Arlo' });
   await page.getByLabel('Status').selectOption('outgrown');
   await page.getByRole('button', { name: 'Save item' }).click();
   await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();

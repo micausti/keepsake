@@ -3,6 +3,7 @@ import { db } from '../db/db.ts';
 import { recentItems } from '../db/items.ts';
 import { getSettings } from '../db/settings.ts';
 import { formatAge, sizeLabel } from '../domain/sizes.ts';
+import { isAdult } from '../domain/types.ts';
 import { BackupControls } from '../backup/BackupControls.tsx';
 import { backupDue, daysSinceBackup } from '../backup/backup.ts';
 import { formatPence } from '../domain/money.ts';
@@ -29,14 +30,14 @@ export function HomePage() {
     <>
       <header className="page-header">
         <h1>Keepsake</h1>
-        <p className="tagline">Kids&rsquo; clothes and toys, all in one place.</p>
+        <p className="tagline">The family&rsquo;s clothes and toys, all in one place.</p>
       </header>
 
       {!setupDone && (
         <section className="card" aria-labelledby="setup-heading">
           <h2 id="setup-heading">Get set up</h2>
           <ul className="checklist">
-            <li data-done={children.length > 0}>Add your children and their sizes</li>
+            <li data-done={children.length > 0}>Add your children (and yourself) in Settings</li>
             <li data-done={Boolean(settings.apiKey)}>Add your Anthropic API key</li>
           </ul>
           <a className="button" href={hrefFor('settings')}>
@@ -64,19 +65,21 @@ export function HomePage() {
 
       {children.length > 0 && (
         <section className="card" aria-labelledby="children-heading">
-          <h2 id="children-heading">Children</h2>
+          <h2 id="children-heading">People</h2>
           <ul className="plain-list">
             {children.map((child) => (
               <li key={child.id} className="child-row">
                 <strong>{child.name}</strong>
                 <span className="muted">
-                  {[
-                    child.birthDate && formatAge(child.birthDate),
-                    sizeLabel('clothing', child.clothingSize),
-                    child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  {isAdult(child)
+                    ? 'Adult'
+                    : [
+                        child.birthDate && formatAge(child.birthDate),
+                        sizeLabel('clothing', child.clothingSize),
+                        child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                 </span>
               </li>
             ))}

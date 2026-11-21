@@ -14,7 +14,7 @@ describe('App', () => {
   it('shows the setup checklist on a fresh install', async () => {
     render(<App />);
     expect(await screen.findByRole('heading', { level: 1, name: 'Keepsake' })).toBeDefined();
-    expect(screen.getByText('Add your children and their sizes')).toBeDefined();
+    expect(screen.getByText('Add your children (and yourself) in Settings')).toBeDefined();
     expect(screen.getByRole('link', { name: 'Open Settings' }).getAttribute('href')).toBe('#/settings');
   });
 
@@ -27,7 +27,7 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Shoe size now'), { target: { value: 'k6' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add child' }));
 
-    const section = screen.getByRole('region', { name: 'Children' });
+    const section = screen.getByRole('region', { name: 'People' });
     expect(await within(section).findByText('Arlo')).toBeDefined();
     expect(within(section).getByText('2–3 years · Shoes UK 6')).toBeDefined();
     expect(await db.children.count()).toBe(1);

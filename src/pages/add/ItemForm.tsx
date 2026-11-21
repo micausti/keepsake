@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { SUGGESTION_FIELDS } from '../../ai/schema.ts';
-import { sizeFitsCategory, type ItemDraft } from '../../domain/draft.ts';
+import { sizeKeptFor, type ItemDraft } from '../../domain/draft.ts';
 import {
   CATEGORIES,
   CONDITIONS,
@@ -10,8 +10,8 @@ import {
   type CategoryId,
   type Season,
 } from '../../domain/options.ts';
-import { sizesFor } from '../../domain/sizes.ts';
-import type { Child } from '../../domain/types.ts';
+import { adultSizeSuggestions, sizesFor } from '../../domain/sizes.ts';
+import { isAdult, type Child } from '../../domain/types.ts';
 
 export type SuggestedField = (typeof SUGGESTION_FIELDS)[number];
 
@@ -40,7 +40,10 @@ function Row(props: { id: string; label: string; check?: boolean; children: Reac
 
 export function ItemForm({ draft, onChange, children, storageLocations, uncertain }: Props) {
   const system = draft.category ? categoryById(draft.category).sizeSystem : 'none';
-  const sizeOptions = sizesFor(system);
+  const owner = children.find((c) => c.id === draft.childId);
+  const adult = isAdult(owner);
+  const sizeOptions = adult ? [] : sizesFor(system);
+  const adultSuggestions = adult ? adultSizeSuggestions(system) : [];
   const text = (field: keyof ItemDraft) => ({
     value: draft[field] as string,
     onChange: (e: { target: { value: string } }) => onChange({ [field]: e.target.value }),
@@ -62,7 +65,7 @@ export function ItemForm({ draft, onChange, children, storageLocations, uncertai
           value={draft.category}
           onChange={(e) => {
             const category = e.target.value as CategoryId | '';
-            onChange({ category, size: sizeFitsCategory(category, draft.size) ? draft.size : '' });
+            onChange({ category, size: sizeKeptFor(owner, category, draft.size) ? draft.size : '' });
           }}
           required
         >
@@ -79,8 +82,16 @@ export function ItemForm({ draft, onChange, children, storageLocations, uncertai
         </select>
       </Row>
 
-      <Row id="item-child" label="Child">
-        <select id="item-child" {...text('childId')}>
+      <Row id="item-child" label="Who">
+        <select
+          id="item-child"
+          value={draft.childId}
+          onChange={(e) => {
+            const childId = e.target.value;
+            const next = children.find((c) => c.id === childId);
+            onChange({ childId, size: sizeKeptFor(next, draft.category, draft.size) ? draft.size : '' });
+          }}
+        >
           <option value="">Not assigned</option>
           {children.map((c) => (
             <option key={c.id} value={c.id}>
@@ -89,6 +100,24 @@ export function ItemForm({ draft, onChange, children, storageLocations, uncertai
           ))}
         </select>
       </Row>
+
+      {adultSuggestions.length > 0 && (
+        <Row id="item-size" label="Size" check={uncertain.has('size')}>
+          <input
+            id="item-size"
+            list="adult-sizes"
+            {...text('size')}
+            placeholder={system === 'shoes' ? 'e.g. UK 6' : 'e.g. M, UK 10, W30 L32'}
+            autoCapitalize="characters"
+            autoComplete="off"
+          />
+          <datalist id="adult-sizes">
+            {adultSuggestions.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </Row>
+      )}
 
       {sizeOptions.length > 0 && (
         <Row id="item-size" label={system === 'toy_age' ? 'Age' : 'Size'} check={uncertain.has('size')}>

@@ -17,7 +17,7 @@ import {
   type ItemStatus,
 } from '../domain/options.ts';
 import { sizeLabel } from '../domain/sizes.ts';
-import type { Child, Item, ItemEvent, Photo } from '../domain/types.ts';
+import { childrenOnly, isAdult, type Child, type Item, type ItemEvent, type Photo } from '../domain/types.ts';
 import { BlobImage } from '../ui/BlobImage.tsx';
 import { hrefFor, itemHref, navigate } from '../ui/router.ts';
 
@@ -79,7 +79,9 @@ function Timeline(props: { events: ItemEvent[]; photos: Photo[]; children: Child
  * other child it's a single button; with more, pick who from a list first.
  */
 function PassTo({ item, children }: { item: Item; children: Child[] }) {
-  const others = children.filter((c) => c.id !== item.childId);
+  // Passing on is between children; adults' own things aren't passed on.
+  const owner = children.find((c) => c.id === item.childId);
+  const others = isAdult(owner) ? [] : childrenOnly(children).filter((c) => c.id !== item.childId);
   const [to, setTo] = useState('');
   if (!others.length || GONE_STATUSES.includes(item.status)) return null;
 
@@ -170,7 +172,7 @@ export function ItemPage({ id }: { id: string }) {
 
   const details: [string, string | undefined][] = [
     ['Category', CATEGORY_LABELS[item.category]],
-    ['Child', child?.name ?? 'Not assigned'],
+    ['Who', child?.name ?? 'Not assigned'],
     [system === 'toy_age' ? 'Age' : 'Size', sizeLabel(system, item.size)],
     ['Seasons', item.seasons.map((s) => SEASON_LABELS[s]).join(', ')],
     ['Condition', item.condition && CONDITION_LABELS[item.condition]],
