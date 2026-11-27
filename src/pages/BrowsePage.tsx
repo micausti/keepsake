@@ -19,6 +19,8 @@ import {
 } from '../domain/options.ts';
 import { sizesFor } from '../domain/sizes.ts';
 import { ItemTile } from '../ui/ItemTile.tsx';
+import { bulkUpdate, knownStorageLocations, undoBulkUpdate, type BulkChanges, type BulkUndo } from '../db/items.ts';
+import { BulkUpdateSheet } from './items/BulkUpdateSheet.tsx';
 import { hrefFor } from '../ui/router.ts';
 
 const GROUPS = [...new Set(CATEGORIES.map((c) => c.group))];
@@ -55,6 +57,19 @@ export function BrowsePage() {
   const children = useLiveQuery(() => db.children.orderBy('name').toArray());
   const [query, setQuery] = useState<ItemQuery>(rememberedQuery);
   const [filtersOpen, setFiltersOpen] = useState(rememberedOpen);
+  const locations = useLiveQuery(() => knownStorageLocations()) ?? [];
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [updating, setUpdating] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<{ undo: BulkUndo; count: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // The Undo offer disappears after 10 seconds.
+  useEffect(() => {
+    if (!lastUpdate) return;
+    const timer = setTimeout(() => setLastUpdate(null), 10_000);
+    return () => clearTimeout(timer);
+  }, [lastUpdate]);
 
   useEffect(() => {
     rememberedQuery = query;
@@ -69,6 +84,36 @@ export function BrowsePage() {
   if (!items || !children) return null;
 
   const set = (patch: Partial<ItemQuery>) => setQuery((q) => ({ ...q, ...patch }));
+  // Only ticked items that the current search and filters still show are updated.
+  const chosen = results.filter((i) => selected.has(i.id)).map((i) => i.id);
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const stopSelecting = () => {
+    setSelecting(false);
+    setSelected(new Set());
+    setUpdating(false);
+  };
+  const apply = async (changes: BulkChanges) => {
+    setError(null);
+    try {
+      const undo = await bulkUpdate(chosen, changes);
+      setLastUpdate({ undo, count: chosen.length });
+      stopSelecting();
+    } catch {
+      setError('Couldn’t update those items. Nothing was changed.');
+      setUpdating(false);
+    }
+  };
+  const undoLast = async () => {
+    if (!lastUpdate) return;
+    await undoBulkUpdate(lastUpdate.undo);
+    setLastUpdate(null);
+  };
   const sizeOptions = query.category ? sizesFor(categoryById(query.category).sizeSystem) : [];
   const filterCount = activeFilterCount(query);
 
@@ -96,6 +141,16 @@ export function BrowsePage() {
         >
           Filters{filterCount ? ` (${filterCount})` : ''}
         </button>
+        {items.length > 0 && (
+          <button
+            type="button"
+            className={selecting ? '' : 'secondary outline'}
+            aria-pressed={selecting}
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+          >
+            {selecting ? 'Done' : 'Select'}
+          </button>
+        )}
       </div>
 
       {filtersOpen && (
@@ -206,11 +261,69 @@ export function BrowsePage() {
           <p className="muted">Nothing matches. Try fewer words or clear the filters.</p>
         </section>
       ) : (
-        <ul className="item-grid" aria-label="Items">
-          {results.map((item) => (
-            <ItemTile key={item.id} item={item} />
-          ))}
-        </ul>
+        <>
+          {selecting && (
+            <div className="select-row">
+              <span className="muted">Tap items to select them.</span>
+              {chosen.length < results.length ? (
+                <button type="button" className="secondary link" onClick={() => setSelected(new Set(results.map((i) => i.id)))}>
+                  Select all ({results.length})
+                </button>
+              ) : (
+                <button type="button" className="secondary link" onClick={() => setSelected(new Set())}>
+                  Clear selection
+                </button>
+              )}
+            </div>
+          )}
+          <ul className="item-grid" aria-label="Items">
+            {results.map((item) => (
+              <ItemTile
+                key={item.id}
+                item={item}
+                selection={selecting ? { selected: selected.has(item.id), onToggle: () => toggle(item.id) } : undefined}
+              />
+            ))}
+          </ul>
+        </>
+      )}
+
+      {error && (
+        <p className="warning" role="alert">
+          {error}
+        </p>
+      )}
+
+      {selecting && (
+        <div className="action-bar" role="region" aria-label="Selection">
+          <span>
+            <strong>{chosen.length}</strong> selected
+          </span>
+          <button type="button" disabled={chosen.length === 0} onClick={() => setUpdating(true)}>
+            Update…
+          </button>
+        </div>
+      )}
+
+      {!selecting && lastUpdate && (
+        <div className="action-bar" role="status" aria-label="Updated">
+          <span>
+            Updated {lastUpdate.count} {lastUpdate.count === 1 ? 'item' : 'items'}
+          </span>
+          <button type="button" className="secondary" onClick={() => void undoLast()}>
+            Undo
+          </button>
+        </div>
+      )}
+
+      {updating && (
+        <BulkUpdateSheet
+          count={chosen.length}
+          people={children}
+          storageLocations={locations}
+          onApply={(changes) => void apply(changes)}
+          onCancel={() => setUpdating(false)}
+        />
       )}
     </>
   );

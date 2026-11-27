@@ -26,22 +26,45 @@ function useNearScreen<T extends Element>(): [RefObject<T | null>, boolean] {
   return [ref, near];
 }
 
+interface Props {
+  item: Item;
+  /** In select mode a tap ticks the tile instead of opening the item. */
+  selection?: { selected: boolean; onToggle: () => void };
+}
+
 /** A square photo tile for the Items grid; the item's name shows if it has no photo. */
-export function ItemTile({ item }: { item: Item }) {
-  const [ref, near] = useNearScreen<HTMLAnchorElement>();
+export function ItemTile({ item, selection }: Props) {
+  const [ref, near] = useNearScreen<HTMLElement>();
   const thumb = useLiveQuery(
     () => (near && item.coverPhotoId ? db.photos.get(item.coverPhotoId).then((p) => p?.thumb) : undefined),
     [near, item.coverPhotoId],
   );
+  const content = item.coverPhotoId ? (
+    <BlobImage blob={thumb} alt="" className="item-tile-photo" />
+  ) : (
+    <span className="item-tile-name">{item.title}</span>
+  );
   return (
     <li>
-      <a ref={ref} className="item-tile" href={itemHref(item.id)} aria-label={item.title}>
-        {item.coverPhotoId ? (
-          <BlobImage blob={thumb} alt="" className="item-tile-photo" />
-        ) : (
-          <span className="item-tile-name">{item.title}</span>
-        )}
-      </a>
+      {selection ? (
+        <button
+          ref={ref as RefObject<HTMLButtonElement>}
+          type="button"
+          className="item-tile selectable"
+          aria-label={item.title}
+          aria-pressed={selection.selected}
+          onClick={selection.onToggle}
+        >
+          {content}
+          <span className="item-tile-check" aria-hidden="true">
+            {selection.selected ? '✓' : ''}
+          </span>
+        </button>
+      ) : (
+        <a ref={ref as RefObject<HTMLAnchorElement>} className="item-tile" href={itemHref(item.id)} aria-label={item.title}>
+          {content}
+        </a>
+      )}
     </li>
   );
 }
