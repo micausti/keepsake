@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { processPhoto, rotateJpeg, type ProcessedPhoto } from '../../photos/process.ts';
 import { BlobImage } from '../../ui/BlobImage.tsx';
+import { Lightbox } from '../../ui/Lightbox.tsx';
 
 export const MAX_PHOTOS = 4;
 
@@ -18,6 +19,7 @@ export function PhotoPicker({ photos, onChange }: Props) {
   const library = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
   const room = MAX_PHOTOS - photos.length;
 
   const rotate = async (photo: PickedPhoto) => {
@@ -59,7 +61,14 @@ export function PhotoPicker({ photos, onChange }: Props) {
         <ul className="photo-strip">
           {photos.map((p, i) => (
             <li key={p.key}>
-              <BlobImage blob={p.thumb} alt={`Photo ${i + 1}`} className="photo-thumb" />
+              <button
+                type="button"
+                className="photo-button"
+                aria-label={`View photo ${i + 1}`}
+                onClick={() => setViewing(i)}
+              >
+                <BlobImage blob={p.thumb} alt={`Photo ${i + 1}`} className="photo-thumb" />
+              </button>
               <button
                 type="button"
                 className="photo-remove"
@@ -116,6 +125,13 @@ export function PhotoPicker({ photos, onChange }: Props) {
         onChange={(e) => void add(e)}
         data-testid="library-input"
       />
+      {viewing !== null && photos[viewing] && (
+        <Lightbox
+          blob={photos[viewing].full}
+          alt={`Photo ${viewing + 1}, full size`}
+          onClose={() => setViewing(null)}
+        />
+      )}
     </div>
   );
 }

@@ -80,6 +80,16 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
     buffer: await makePhoto(page, { orientation: 6 }), // portrait, stored sideways like an iPhone
   });
   await expect(page.getByAltText('Photo 1')).toBeVisible();
+
+  // Tap the thumbnail to see the large, upright version.
+  await page.getByRole('button', { name: 'View photo 1' }).click();
+  const viewer = page.getByRole('dialog', { name: 'Photo' });
+  const big = viewer.getByAltText('Photo 1, full size');
+  await expect(big).toBeVisible();
+  expect(await big.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1500, 2000]);
+  await viewer.getByRole('button', { name: 'Close' }).click();
+  await expect(viewer).toHaveCount(0);
+
   await page.getByRole('button', { name: 'Fill in details with AI' }).click();
   await expect(page.getByLabel('Name')).toHaveValue('Navy padded coat');
   await expect(page.getByLabel('Size')).toHaveValue('2-3y');

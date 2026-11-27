@@ -19,6 +19,7 @@ import {
 import { sizeLabel } from '../domain/sizes.ts';
 import { childrenOnly, isAdult, type Child, type Item, type ItemEvent, type Photo } from '../domain/types.ts';
 import { BlobImage } from '../ui/BlobImage.tsx';
+import { Lightbox } from '../ui/Lightbox.tsx';
 import { hrefFor, itemHref, navigate } from '../ui/router.ts';
 
 function eventTitle(event: ItemEvent, children: Child[]): string {
@@ -119,18 +120,6 @@ function PassTo({ item, children }: { item: Item; children: Child[] }) {
         onClick={() => chosen && void pass(chosen)}
       >
         {chosen ? `Pass to ${chosen.name}` : 'Pass'}
-      </button>
-    </div>
-  );
-}
-
-function Lightbox({ photo, onClose }: { photo: Photo; onClose: () => void }) {
-  return (
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label="Photo" onClick={onClose}>
-      <BlobImage blob={photo.blob} alt={`Photo taken ${formatDate(photo.takenAt)}`} className="lightbox-image" />
-      <p className="lightbox-caption">Taken {formatDate(photo.takenAt)}</p>
-      <button type="button" className="lightbox-close" onClick={onClose}>
-        Close
       </button>
     </div>
   );
@@ -299,7 +288,14 @@ export function ItemPage({ id }: { id: string }) {
         Delete item
       </button>
 
-      {lightbox && <Lightbox photo={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && (
+        <Lightbox
+          blob={lightbox.blob}
+          alt={`Photo taken ${formatDate(lightbox.takenAt)}`}
+          caption={`Taken ${formatDate(lightbox.takenAt)}`}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </>
   );
 }
