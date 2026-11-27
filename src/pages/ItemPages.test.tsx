@@ -154,3 +154,27 @@ describe('Item page', () => {
     expect(await screen.findByText('This item no longer exists.')).toBeDefined();
   });
 });
+
+describe('Viewing a new photo full size', () => {
+  it('opens the large version from the thumbnail and closes again', async () => {
+    const { coat } = await seed();
+    render(<App />);
+    await go(`#/item/${coat.id}/update`);
+    fireEvent.change(await screen.findByTestId('library-input'), {
+      target: { files: [new File(['x'], 'p.jpg', { type: 'image/jpeg' })] },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'View photo 1' }));
+
+    const viewer = await screen.findByRole('dialog', { name: 'Photo' });
+    expect(within(viewer).getByAltText('Photo 1, full size')).toBeDefined();
+    // The thumbnail's own buttons still work alongside.
+    expect(screen.getByRole('button', { name: 'Remove photo 1' })).toBeDefined();
+
+    fireEvent.click(within(viewer).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'View photo 1' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
