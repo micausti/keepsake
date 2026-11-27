@@ -29,6 +29,13 @@ const fresh = (): Session => ({ stage: { name: 'photos' }, photos: [], draft: nu
 // Kept in memory so switching tabs mid-way doesn't lose the photos and draft.
 let remembered: Session = fresh();
 
+/** Status and storage location carried over to the next new item, for batches of similar things. */
+type CarryOver = Pick<ItemDraft, 'status' | 'storageLocation'>;
+let carryOver: CarryOver | null = null;
+const setCarryOver = (next: CarryOver | null) => {
+  carryOver = next;
+};
+
 export function AddItemPage() {
   const settings = useLiveQuery(() => getSettings());
   const children = useLiveQuery(() => db.children.orderBy('name').toArray());
@@ -36,6 +43,7 @@ export function AddItemPage() {
   const [session, setSession] = useState<Session>(remembered);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [keepForNext, setKeepForNext] = useState(carryOver !== null);
 
   useEffect(() => {
     remembered = session.stage.name === 'saved' ? fresh() : session;
@@ -44,7 +52,8 @@ export function AddItemPage() {
   if (!settings || !children) return null;
 
   const update = (patch: Partial<Session>) => setSession((s) => ({ ...s, ...patch }));
-  const draft = session.draft ?? emptyDraft(children);
+  const startDraft = (): ItemDraft => ({ ...emptyDraft(children), ...(carryOver ?? {}) });
+  const draft = session.draft ?? startDraft();
   const { stage, photos } = session;
 
   const runAi = async () => {
@@ -62,7 +71,7 @@ export function AddItemPage() {
         ? {
             ...s,
             stage: { name: 'review' },
-            draft: draftFromSuggestion(result.suggestion, children, s.draft ?? emptyDraft(children)),
+            draft: draftFromSuggestion(result.suggestion, children, s.draft ?? startDraft()),
             uncertain: result.suggestion.uncertain,
           }
         : { ...s, stage: { name: 'review', aiError: result.message } },
@@ -75,6 +84,7 @@ export function AddItemPage() {
     setSaveError(null);
     try {
       const item = await createItem(draft, photos);
+      setCarryOver(keepForNext ? { status: draft.status, storageLocation: draft.storageLocation } : null);
       setSession({ ...fresh(), stage: { name: 'saved', item } });
       // Once there's real data, ask the browser not to evict it.
       const storage = await getStorageStatus();
@@ -185,6 +195,10 @@ export function AddItemPage() {
             storageLocations={locations}
             uncertain={new Set(session.uncertain)}
           />
+          <label className="keep-next">
+            <input type="checkbox" checked={keepForNext} onChange={(e) => setKeepForNext(e.target.checked)} />
+            Keep status and location for the next item
+          </label>
           {saveError && (
             <p className="warning" role="alert">
               {saveError}

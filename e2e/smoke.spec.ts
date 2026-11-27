@@ -121,7 +121,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByLabel('Category').selectOption('tops');
   await page.getByLabel('Size').selectOption('3-4y');
   await page.getByLabel('Who').selectOption({ label: 'Arlo' });
-  await page.getByLabel('Status').selectOption('outgrown');
+  await page.getByLabel('Status', { exact: true }).selectOption('outgrown');
   await page.getByRole('button', { name: 'Save item' }).click();
   await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
 
@@ -152,7 +152,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await page.getByLabel('Note').fill('Small mark on the sleeve');
   await page.getByRole('button', { name: 'Save update' }).click();
   await expect(page.getByText('Condition: Good')).toBeVisible();
-  await page.getByLabel('Status').selectOption('to_sell');
+  await page.getByLabel('Status', { exact: true }).selectOption('to_sell');
   await expect(page.getByText('Status: To sell')).toBeVisible();
 
   // Sell: copy a listing field, mark listed, then sold.
@@ -178,6 +178,20 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await expect(handDowns.getByText('Dino top')).toBeVisible();
   await handDowns.getByRole('button', { name: 'Pass to Zoe' }).click();
   await expect(handDowns).toHaveCount(0);
+
+  // Bulk update: select everything shown, set a storage location, then undo it.
+  await page.getByRole('link', { name: 'Items', exact: true }).click();
+  await page.getByLabel('Search items').fill('');
+  await page.getByRole('button', { name: 'Select', exact: true }).click();
+  await page.getByRole('button', { name: /^Select all/ }).click();
+  await page.getByRole('region', { name: 'Selection' }).getByRole('button', { name: 'Update…' }).click();
+  const sheet = page.getByRole('dialog', { name: /^Update \d+ items?$/ });
+  await sheet.getByLabel('Storage location').fill('Loft box 9');
+  await sheet.getByRole('button', { name: /^Update \d+ items?$/ }).click();
+  const updated = page.getByRole('status', { name: 'Updated' });
+  await expect(updated).toContainText('Updated');
+  await updated.getByRole('button', { name: 'Undo' }).click();
+  await expect(updated).toHaveCount(0);
 
   // Backup: the Home reminder, export with photos, then restore after a deletion.
   await page.getByRole('link', { name: 'Home', exact: true }).click();
@@ -219,7 +233,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await page.getByRole('link', { name: 'Items', exact: true }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
-  await page.getByLabel('Status').selectOption('');
+  await page.getByLabel('Status', { exact: true }).selectOption('');
   await expect(page.locator('.item-tile')).toHaveCount(2);
   await context.setOffline(false);
 

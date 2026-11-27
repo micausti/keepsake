@@ -36,6 +36,7 @@ function eventTitle(event: ItemEvent, children: Child[]): string {
     case 'note':
       return 'Note';
     case 'handdown':
+      if (!event.toChildId) return `No longer assigned to ${name(event.fromChildId)}`;
       return event.fromChildId
         ? `Passed from ${name(event.fromChildId)} to ${name(event.toChildId)}`
         : `Passed to ${name(event.toChildId)}`;

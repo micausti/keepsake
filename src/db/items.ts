@@ -1,5 +1,5 @@
 import { parsePounds } from '../domain/money.ts';
-import { PLATFORM_LABELS, type Condition, type ItemStatus, type Platform } from '../domain/options.ts';
+import { PLATFORM_LABELS, type Condition, type ItemStatus, type Platform, type Season } from '../domain/options.ts';
 import { formatPence } from '../domain/money.ts';
 import type { ItemDraft } from '../domain/draft.ts';
 import type { Item, ItemEvent, Photo } from '../domain/types.ts';
@@ -341,4 +341,88 @@ export async function rotatePhoto(photoId: string, database: KeepsakeDB = db): P
   if (!photo) throw new Error('Photo not found');
   const [full, thumb] = await Promise.all([rotateJpeg(photo.blob, 0.85), rotateJpeg(photo.thumb, 0.8)]);
   await database.photos.update(photoId, { blob: full.blob, thumb: thumb.blob, width: full.width, height: full.height });
+}
+
+/** Changes to apply to many items at once; anything left undefined is untouched. */
+export interface BulkChanges {
+  storageLocation?: string;
+  status?: ItemStatus;
+  /** '' means "not assigned". */
+  childId?: string;
+  addSeason?: Season;
+  removeSeason?: Season;
+}
+
+/** What's needed to put a bulk update back exactly as it was. */
+export interface BulkUndo {
+  before: Pick<Item, 'id' | 'storageLocation' | 'status' | 'childId' | 'seasons' | 'updatedAt'>[];
+  eventIds: string[];
+}
+
+export const hasBulkChanges = (c: BulkChanges): boolean =>
+  Boolean(c.storageLocation?.trim()) ||
+  c.status !== undefined ||
+  c.childId !== undefined ||
+  c.addSeason !== undefined ||
+  c.removeSeason !== undefined;
+
+/**
+ * Updates many items in one all-or-nothing step. Status changes, moves to a
+ * new storage location and changes of owner go on each item's timeline.
+ */
+export async function bulkUpdate(ids: string[], changes: BulkChanges, database: KeepsakeDB = db): Promise<BulkUndo> {
+  if (!hasBulkChanges(changes)) throw new DraftError('Choose something to change.');
+  const location = changes.storageLocation?.trim();
+  const timestamp = now();
+  return database.transaction('rw', database.items, database.events, async () => {
+    const items = (await database.items.bulkGet(ids)).filter((i): i is Item => !!i);
+    const undo: BulkUndo = { before: [], eventIds: [] };
+    const events: ItemEvent[] = [];
+    const updated: Item[] = [];
+    for (const item of items) {
+      undo.before.push({
+        id: item.id,
+        storageLocation: item.storageLocation,
+        status: item.status,
+        childId: item.childId,
+        seasons: [...item.seasons],
+        updatedAt: item.updatedAt,
+      });
+      const next: Item = { ...item, seasons: [...item.seasons], updatedAt: timestamp };
+      const event = (e: Omit<ItemEvent, 'id' | 'itemId' | 'at'>) =>
+        events.push({ id: newId(), itemId: item.id, at: timestamp, ...e });
+
+      if (location && location !== item.storageLocation) {
+        next.storageLocation = location;
+        event({ kind: 'note', note: `Moved to ${location}` });
+      }
+      if (changes.status && changes.status !== item.status) {
+        next.status = changes.status;
+        event({ kind: 'status', status: changes.status });
+      }
+      if (changes.childId !== undefined && (changes.childId || undefined) !== item.childId) {
+        next.childId = changes.childId || undefined;
+        event({ kind: 'handdown', fromChildId: item.childId, toChildId: next.childId });
+      }
+      if (changes.addSeason && !next.seasons.includes(changes.addSeason)) next.seasons.push(changes.addSeason);
+      if (changes.removeSeason) next.seasons = next.seasons.filter((s) => s !== changes.removeSeason);
+      updated.push(next);
+    }
+    await database.items.bulkPut(updated);
+    await database.events.bulkAdd(events);
+    undo.eventIds = events.map((e) => e.id);
+    return undo;
+  });
+}
+
+/** Puts items back exactly as they were before a bulk update. */
+export async function undoBulkUpdate(undo: BulkUndo, database: KeepsakeDB = db): Promise<void> {
+  await database.transaction('rw', database.items, database.events, async () => {
+    for (const before of undo.before) {
+      const item = await database.items.get(before.id);
+      // Spreading `before` also restores fields that were empty (undefined) beforehand.
+      if (item) await database.items.put({ ...item, ...before });
+    }
+    await database.events.bulkDelete(undo.eventIds);
+  });
 }
