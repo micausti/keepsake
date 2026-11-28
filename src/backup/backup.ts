@@ -10,11 +10,11 @@ export const BACKUP_FORMAT = 'keepsake-backup';
 export const BACKUP_VERSION = 1;
 
 /** Settings that stay on this device and never go into a backup. */
-const DEVICE_ONLY_SETTINGS = new Set(['apiKey', 'lastBackupAt']);
+export const DEVICE_ONLY_SETTINGS = new Set(['apiKey', 'lastBackupAt', 'driveAccount', 'driveLastSyncAt']);
 
-type PhotoRecord = Omit<Photo, 'blob' | 'thumb'> & { file: string; thumbFile: string };
+export type PhotoRecord = Omit<Photo, 'blob' | 'thumb'> & { file: string; thumbFile: string };
 
-interface BackupJson {
+export interface BackupJson {
   format: typeof BACKUP_FORMAT;
   version: number;
   exportedAt: string;
@@ -38,13 +38,8 @@ export class BackupError extends Error {}
 export const backupFileName = (date = new Date()) =>
   `keepsake-backup-${date.toISOString().slice(0, 10)}.zip`;
 
-/** Builds the backup file. Call markBackedUp once it has actually been saved. */
-export async function exportBackup(
-  appVersion: string,
-  database: KeepsakeDB = db,
-  onProgress?: (done: number, total: number) => void,
-): Promise<{ file: File; summary: BackupSummary }> {
-  const exportedAt = now();
+/** Every record, read in one go so they're consistent with each other. */
+export async function readRecords(database: KeepsakeDB = db) {
   const [children, items, events, photos, settings] = await database.transaction(
     'r',
     [database.children, database.items, database.events, database.photos, database.settings],
@@ -57,6 +52,43 @@ export async function exportBackup(
         database.settings.toArray(),
       ]),
   );
+  return { children, items, events, photos, settings: settings.filter((s) => !DEVICE_ONLY_SETTINGS.has(s.key)) };
+}
+
+/**
+ * Replaces every record with a backup's. Photos already stored under the
+ * backup's ids are kept (`photos` may be given separately or have been put
+ * one at a time beforehand); any other photos are removed.
+ */
+export async function replaceRecords(json: BackupJson, photos: Photo[], database: KeepsakeDB = db): Promise<void> {
+  const keepIds = new Set(json.photos.map((p) => p.id));
+  await database.transaction(
+    'rw',
+    [database.children, database.items, database.events, database.photos, database.settings],
+    async () => {
+      await Promise.all([database.children.clear(), database.items.clear(), database.events.clear()]);
+      const stale = (await database.photos.toCollection().primaryKeys()).filter((id) => !keepIds.has(id));
+      await database.photos.bulkDelete(stale);
+      // Keep this device's key, backup date and Drive connection; replace the rest.
+      const keep = (await database.settings.toArray()).filter((s) => DEVICE_ONLY_SETTINGS.has(s.key));
+      await database.settings.clear();
+      await database.children.bulkAdd(json.children);
+      await database.items.bulkAdd(json.items);
+      await database.events.bulkAdd(json.events);
+      await database.photos.bulkPut(photos);
+      await database.settings.bulkPut([...json.settings.filter((s) => !DEVICE_ONLY_SETTINGS.has(s.key)), ...keep]);
+    },
+  );
+}
+
+/** Builds the backup file. Call markBackedUp once it has actually been saved. */
+export async function exportBackup(
+  appVersion: string,
+  database: KeepsakeDB = db,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ file: File; summary: BackupSummary }> {
+  const exportedAt = now();
+  const { children, items, events, photos, settings } = await readRecords(database);
 
   const photoEntries: ZipEntry[] = [];
   const photoRecords: PhotoRecord[] = photos.map(({ blob, thumb, ...rest }) => {
@@ -76,7 +108,7 @@ export async function exportBackup(
     items,
     events,
     photos: photoRecords,
-    settings: settings.filter((s) => !DEVICE_ONLY_SETTINGS.has(s.key)),
+    settings,
   };
 
   const zip = await writeZip(
@@ -101,6 +133,14 @@ export interface OpenedBackup {
 }
 
 /** Reads and checks a backup file without changing anything. */
+/** Checks parsed backup JSON is one this version can restore. */
+export function checkBackupJson(json: BackupJson): void {
+  if (json?.format !== BACKUP_FORMAT) throw new BackupError('That isn’t a Keepsake backup.');
+  if (json.version > BACKUP_VERSION) {
+    throw new BackupError('This backup is from a newer version of Keepsake. Update the app first.');
+  }
+}
+
 export async function openBackup(file: Blob): Promise<OpenedBackup> {
   let json: BackupJson;
   let zip: Awaited<ReturnType<typeof readZip>>;
@@ -114,10 +154,8 @@ export async function openBackup(file: Blob): Promise<OpenedBackup> {
         : 'That isn’t a Keepsake backup file.',
     );
   }
-  if (json.format !== BACKUP_FORMAT) throw new BackupError('That isn’t a Keepsake backup file.');
-  if (json.version > BACKUP_VERSION) {
-    throw new BackupError('This backup is from a newer version of Keepsake. Update the app first.');
-  }
+  if (json?.format !== BACKUP_FORMAT) throw new BackupError('That isn’t a Keepsake backup file.');
+  checkBackupJson(json);
   const missing = json.photos.find((p) => !zip.names.includes(p.file) || !zip.names.includes(p.thumbFile));
   if (missing) throw new BackupError('This backup is incomplete: some photos are missing.');
 
@@ -139,29 +177,7 @@ export async function openBackup(file: Blob): Promise<OpenedBackup> {
           thumb: await zip.blob(thumbFile, 'image/jpeg'),
         })),
       );
-      await database.transaction(
-        'rw',
-        [database.children, database.items, database.events, database.photos, database.settings],
-        async () => {
-          await Promise.all([
-            database.children.clear(),
-            database.items.clear(),
-            database.events.clear(),
-            database.photos.clear(),
-          ]);
-          // Keep this device's key and backup date; replace the rest.
-          const keep = (await database.settings.toArray()).filter((s) => DEVICE_ONLY_SETTINGS.has(s.key));
-          await database.settings.clear();
-          await database.children.bulkAdd(json.children);
-          await database.items.bulkAdd(json.items);
-          await database.events.bulkAdd(json.events);
-          await database.photos.bulkAdd(photos);
-          await database.settings.bulkPut([
-            ...json.settings.filter((s) => !DEVICE_ONLY_SETTINGS.has(s.key)),
-            ...keep,
-          ]);
-        },
-      );
+      await replaceRecords(json, photos, database);
     },
   };
 }

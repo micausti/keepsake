@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLOWED_API_ORIGIN, buildCsp, cspDirectives } from './csp.ts';
+import { ALLOWED_API_ORIGIN, GOOGLE_API_ORIGIN, buildCsp, cspDirectives } from './csp.ts';
 
 describe('Content Security Policy', () => {
   const csp = buildCsp();
@@ -8,9 +8,10 @@ describe('Content Security Policy', () => {
     expect(csp).toMatch(/^default-src 'none'/);
   });
 
-  it('only allows network calls to self and the Anthropic API', () => {
-    expect(cspDirectives['connect-src']).toEqual(["'self'", ALLOWED_API_ORIGIN]);
+  it('only allows network calls to self, the Anthropic API and the Google Drive API', () => {
+    expect(cspDirectives['connect-src']).toEqual(["'self'", ALLOWED_API_ORIGIN, GOOGLE_API_ORIGIN]);
     expect(ALLOWED_API_ORIGIN).toBe('https://api.anthropic.com');
+    expect(GOOGLE_API_ORIGIN).toBe('https://www.googleapis.com');
   });
 
   it('never allows inline or eval scripts', () => {
@@ -21,6 +22,6 @@ describe('Content Security Policy', () => {
 
   it('does not allow any other remote origins', () => {
     const remote = csp.match(/https?:\/\/[^\s;]+/g) ?? [];
-    expect(remote).toEqual([ALLOWED_API_ORIGIN]);
+    expect(remote).toEqual([ALLOWED_API_ORIGIN, GOOGLE_API_ORIGIN]);
   });
 });

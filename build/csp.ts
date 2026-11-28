@@ -5,9 +5,12 @@
  * <meta http-equiv="Content-Security-Policy"> tag injected at build time.
  * (Dev mode is left alone because Vite's HMR client needs inline scripts.)
  *
- * The only third-party origin the app may talk to is the Anthropic API.
+ * The only third-party origins the app may talk to are the Anthropic API and
+ * the Google Drive API (for backups). Google's sign-in page is a normal page
+ * the app leaves for and comes back from, so it isn't listed.
  */
 export const ALLOWED_API_ORIGIN = 'https://api.anthropic.com';
+export const GOOGLE_API_ORIGIN = 'https://www.googleapis.com';
 
 export const cspDirectives: Readonly<Record<string, readonly string[]>> = {
   'default-src': ["'none'"],
@@ -16,7 +19,7 @@ export const cspDirectives: Readonly<Record<string, readonly string[]>> = {
   // blob: and data: are for locally generated photo previews (Phase 2+).
   'img-src': ["'self'", 'blob:', 'data:'],
   'font-src': ["'self'"],
-  'connect-src': ["'self'", ALLOWED_API_ORIGIN],
+  'connect-src': ["'self'", ALLOWED_API_ORIGIN, GOOGLE_API_ORIGIN],
   'manifest-src': ["'self'"],
   'worker-src': ["'self'"],
   'base-uri': ["'self'"],

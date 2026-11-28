@@ -12,6 +12,10 @@ export interface Settings {
   gapTargets?: GapTargets;
   /** When the last backup file was made. */
   lastBackupAt?: string;
+  /** The Google account backups go to, once connected (this phone only). */
+  driveAccount?: string;
+  /** When the last Google Drive backup or restore finished. */
+  driveLastSyncAt?: string;
 }
 
 const DEFAULTS: Settings = { model: DEFAULT_MODEL };

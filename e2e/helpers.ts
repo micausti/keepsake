@@ -1,10 +1,11 @@
 import { expect, type Page } from '@playwright/test';
 
-/** Fails the test on any page error, console error or CSP violation. */
-export function watchForProblems(page: Page): () => void {
+/** Fails the test on any page error, console error or CSP violation (other than `expected` ones). */
+export function watchForProblems(page: Page, expected?: RegExp): () => void {
   const problems: string[] = [];
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
+    if (expected?.test(m.text())) return;
     if (m.type() === 'error' || /Content Security Policy/i.test(m.text())) problems.push(`console: ${m.text()}`);
   });
   return () => expect(problems, problems.join('\n')).toEqual([]);
