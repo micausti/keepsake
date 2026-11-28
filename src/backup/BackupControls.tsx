@@ -7,9 +7,9 @@ const sizeText = (bytes: number) =>
 
 type State =
   | { name: 'idle' }
-  | { name: 'preparing' }
+  | { name: 'preparing'; done: number; total: number }
   | { name: 'ready'; file: File; summary: BackupSummary }
-  | { name: 'done' }
+  | { name: 'done'; how: 'shared' | 'downloaded' }
   | { name: 'error'; message: string };
 
 /**
@@ -20,9 +20,11 @@ export function BackupControls({ onDone }: { onDone?: () => void }) {
   const [state, setState] = useState<State>({ name: 'idle' });
 
   const prepare = async () => {
-    setState({ name: 'preparing' });
+    setState({ name: 'preparing', done: 0, total: 0 });
     try {
-      const { file, summary } = await exportBackup(__APP_VERSION__);
+      const { file, summary } = await exportBackup(__APP_VERSION__, undefined, (done, total) =>
+        setState({ name: 'preparing', done, total }),
+      );
       setState({ name: 'ready', file, summary });
     } catch {
       setState({ name: 'error', message: 'Couldn’t make the backup. Please try again.' });
@@ -31,11 +33,11 @@ export function BackupControls({ onDone }: { onDone?: () => void }) {
 
   const save = async (file: File, summary: BackupSummary) => {
     try {
-      if ((await saveFile(file)) === 'saved') {
-        await markBackedUp(summary.exportedAt);
-        setState({ name: 'done' });
-        onDone?.();
-      }
+      const result = await saveFile(file);
+      if (result === 'cancelled') return; // share sheet closed: the Save button stays
+      await markBackedUp(summary.exportedAt);
+      setState({ name: 'done', how: result });
+      onDone?.();
     } catch {
       setState({ name: 'error', message: 'Couldn’t save the file. Please try again.' });
     }
@@ -59,7 +61,7 @@ export function BackupControls({ onDone }: { onDone?: () => void }) {
     case 'preparing':
       return (
         <p className="muted" role="status">
-          Preparing backup…
+          Preparing backup…{state.total > 0 ? ` ${state.done} of ${state.total} photos` : ''}
         </p>
       );
     case 'ready':
@@ -77,7 +79,9 @@ export function BackupControls({ onDone }: { onDone?: () => void }) {
     case 'done':
       return (
         <p className="success" role="status">
-          ✓ Backup saved.
+          {state.how === 'shared'
+            ? '✓ Backup saved.'
+            : '✓ Download started. Look for it in the Files app, under Downloads.'}
         </p>
       );
   }

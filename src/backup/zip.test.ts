@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { crc32, readZip, writeZip, ZipError } from './zip.ts';
+import { describe, expect, it, vi } from 'vitest';
+import { CHUNK_SIZE, crc32, crc32OfBlob, readZip, writeZip, ZipError } from './zip.ts';
 
 describe('zip', () => {
   it('computes CRC-32', () => {
@@ -28,5 +28,40 @@ describe('zip', () => {
     await expect(readZip(new Blob(['not a zip']))).rejects.toThrow(ZipError);
     const reader = await readZip(await writeZip([]));
     await expect(reader.text('nope')).rejects.toThrow('Missing nope');
+  });
+});
+
+describe('large photos', () => {
+  const big = new Uint8Array(CHUNK_SIZE * 2 + 12345).map((_, i) => (i * 31 + 7) % 256);
+
+  it('checksums a Blob in chunks with the same result', async () => {
+    expect(await crc32OfBlob(new Blob([big]))).toBe(crc32(big));
+  });
+
+  it('never reads a whole photo into memory, and still writes it correctly', async () => {
+    const photo = new Blob([big], { type: 'image/jpeg' });
+    const whole = vi.spyOn(photo, 'arrayBuffer');
+    const slice = vi.spyOn(photo, 'slice');
+    const progress: [number, number][] = [];
+
+    const zip = await writeZip(
+      [
+        { name: 'keepsake.json', data: '{}' },
+        { name: 'photos/big.jpg', data: photo },
+      ],
+      (done, total) => progress.push([done, total]),
+    );
+
+    expect(whole).not.toHaveBeenCalled();
+    expect(slice).toHaveBeenCalledTimes(3);
+    for (const [start, end] of slice.mock.calls) expect((end ?? 0) - (start ?? 0)).toBeLessThanOrEqual(CHUNK_SIZE);
+    expect(progress).toEqual([
+      [1, 2],
+      [2, 2],
+    ]);
+
+    const back = await (await readZip(zip)).blob('photos/big.jpg', 'image/jpeg');
+    expect(back.type).toBe('image/jpeg');
+    expect(new Uint8Array(await back.arrayBuffer())).toEqual(big);
   });
 });

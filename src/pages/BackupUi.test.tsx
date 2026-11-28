@@ -38,7 +38,7 @@ describe('Backup in Settings', () => {
 
     fireEvent.click(within(section).getByRole('button', { name: 'Prepare backup' }));
     fireEvent.click(await within(section).findByRole('button', { name: 'Save backup file' }));
-    expect(await within(section).findByText('✓ Backup saved.')).toBeDefined();
+    expect(await within(section).findByText(/✓ Download started/)).toBeDefined();
     expect(downloaded?.name).toMatch(/^keepsake-backup-.*\.zip$/);
     await waitFor(async () => expect((await getSettings()).lastBackupAt).toBeDefined());
     expect(await within(section).findByText(/Last backup: today/)).toBeDefined();

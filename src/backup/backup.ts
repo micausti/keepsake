@@ -42,6 +42,7 @@ export const backupFileName = (date = new Date()) =>
 export async function exportBackup(
   appVersion: string,
   database: KeepsakeDB = db,
+  onProgress?: (done: number, total: number) => void,
 ): Promise<{ file: File; summary: BackupSummary }> {
   const exportedAt = now();
   const [children, items, events, photos, settings] = await database.transaction(
@@ -78,7 +79,11 @@ export async function exportBackup(
     settings: settings.filter((s) => !DEVICE_ONLY_SETTINGS.has(s.key)),
   };
 
-  const zip = await writeZip([{ name: 'keepsake.json', data: JSON.stringify(json, null, 1) }, ...photoEntries]);
+  const zip = await writeZip(
+    [{ name: 'keepsake.json', data: JSON.stringify(json, null, 1) }, ...photoEntries],
+    // Report progress in photos (each has a full-size copy and a thumbnail).
+    onProgress && ((done, total) => onProgress(Math.floor(Math.max(0, done - 1) / 2), Math.floor((total - 1) / 2))),
+  );
   return {
     file: new File([zip], backupFileName(new Date(exportedAt)), { type: 'application/zip' }),
     summary: { exportedAt, children: children.length, items: items.length, photos: photos.length },
@@ -124,12 +129,14 @@ export async function openBackup(file: Blob): Promise<OpenedBackup> {
       photos: json.photos.length,
     },
     restore: async (database: KeepsakeDB = db) => {
-      // Read every photo before touching the database, so a bad file changes nothing.
+      // Locate every photo before touching the database, so a bad file changes nothing.
+      // They stay as slices of the backup file (not copies in memory); the
+      // database reads each one as it's stored.
       const photos: Photo[] = await Promise.all(
         json.photos.map(async ({ file: path, thumbFile, ...rest }) => ({
           ...rest,
-          blob: new Blob([await (await zip.blob(path)).arrayBuffer()], { type: 'image/jpeg' }),
-          thumb: new Blob([await (await zip.blob(thumbFile)).arrayBuffer()], { type: 'image/jpeg' }),
+          blob: await zip.blob(path, 'image/jpeg'),
+          thumb: await zip.blob(thumbFile, 'image/jpeg'),
         })),
       );
       await database.transaction(
