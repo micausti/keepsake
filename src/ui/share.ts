@@ -31,11 +31,11 @@ export async function sharePhotos(files: File[]): Promise<'shared' | 'cancelled'
  * Saves a file: the share sheet where it can take files (iPhone: "Save to
  * Files", iCloud Drive…), otherwise a normal download.
  */
-export async function saveFile(file: File): Promise<'saved' | 'cancelled'> {
+export async function saveFile(file: File): Promise<'shared' | 'downloaded' | 'cancelled'> {
   if (canShareFiles([file])) {
     try {
       await navigator.share({ files: [file], title: file.name });
-      return 'saved';
+      return 'shared';
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
       throw error;
@@ -49,7 +49,7 @@ export async function saveFile(file: File): Promise<'saved' | 'cancelled'> {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  return 'saved';
+  return 'downloaded';
 }
 
 export const fileName = (title: string, index: number) =>
