@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { processPhoto, rotateJpeg, type ProcessedPhoto } from '../../photos/process.ts';
+import { AI_QUALITY, THUMB_QUALITY, processPhoto, rotateJpeg, type ProcessedPhoto } from '../../photos/process.ts';
 import { BlobImage } from '../../ui/BlobImage.tsx';
 import { Lightbox } from '../../ui/Lightbox.tsx';
 
@@ -26,9 +26,9 @@ export function PhotoPicker({ photos, onChange }: Props) {
     setBusy(true);
     try {
       const [full, thumb, ai] = await Promise.all([
-        rotateJpeg(photo.full, 0.85),
-        rotateJpeg(photo.thumb, 0.8),
-        rotateJpeg(photo.ai, 0.8),
+        rotateJpeg(photo.full),
+        rotateJpeg(photo.thumb, THUMB_QUALITY),
+        rotateJpeg(photo.ai, AI_QUALITY),
       ]);
       const rotated = { ...photo, full: full.blob, thumb: thumb.blob, ai: ai.blob, width: full.width, height: full.height };
       onChange(photos.map((p) => (p.key === photo.key ? rotated : p)));

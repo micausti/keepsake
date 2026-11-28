@@ -60,7 +60,7 @@ export interface Photo {
   itemId: string;
   /** When the photo was taken (from the camera, before EXIF is stripped). */
   takenAt: Timestamp;
-  /** JPEG, about 2000px on the long edge, with EXIF/GPS removed. */
+  /** JPEG, about 1600px on the long edge (older photos may be 2000px), with EXIF/GPS removed. */
   blob: Blob;
   /** Small JPEG (~400px) for lists. */
   thumb: Blob;
