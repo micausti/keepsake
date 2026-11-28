@@ -5,6 +5,7 @@ import {
   requestPersistentStorage,
   type StorageStatus,
 } from '../../db/storage.ts';
+import { ShrinkPhotos } from './ShrinkPhotos.tsx';
 
 export function StorageSection() {
   const [status, setStatus] = useState<StorageStatus | null>(null);
@@ -51,6 +52,7 @@ export function StorageSection() {
           )}
         </>
       )}
+      <ShrinkPhotos onChanged={() => void getStorageStatus().then(setStatus)} />
       <p className="muted">
         Everything is stored only on this device. Keep a backup file too (see Backup above).
       </p>

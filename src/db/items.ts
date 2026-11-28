@@ -3,7 +3,7 @@ import { PLATFORM_LABELS, type Condition, type ItemStatus, type Platform, type S
 import { formatPence } from '../domain/money.ts';
 import type { ItemDraft } from '../domain/draft.ts';
 import type { Item, ItemEvent, Photo } from '../domain/types.ts';
-import { rotateJpeg } from '../photos/process.ts';
+import { THUMB_QUALITY, rotateJpeg } from '../photos/process.ts';
 import { db, newId, now, type KeepsakeDB } from './db.ts';
 
 export interface NewPhoto {
@@ -339,7 +339,7 @@ export async function unlist(itemId: string, database: KeepsakeDB = db): Promise
 export async function rotatePhoto(photoId: string, database: KeepsakeDB = db): Promise<void> {
   const photo = await database.photos.get(photoId);
   if (!photo) throw new Error('Photo not found');
-  const [full, thumb] = await Promise.all([rotateJpeg(photo.blob, 0.85), rotateJpeg(photo.thumb, 0.8)]);
+  const [full, thumb] = await Promise.all([rotateJpeg(photo.blob), rotateJpeg(photo.thumb, THUMB_QUALITY)]);
   await database.photos.update(photoId, { blob: full.blob, thumb: thumb.blob, width: full.width, height: full.height });
 }
 

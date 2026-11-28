@@ -1,15 +1,20 @@
 /**
  * Turns a camera or library photo into the copies the app needs:
- *  - full:  ~2000px JPEG kept on the device
+ *  - full:  ~1600px JPEG kept on the device
  *  - thumb: ~400px JPEG for lists
  *  - ai:    ~1000px JPEG sent to Claude, never stored
  * Drawing to a canvas and re-encoding drops all metadata, including GPS.
  */
 import { readExif } from './exif.ts';
 
-export const FULL_EDGE = 2000;
+// 1600px is sharp on a phone and plenty for listings, at about half the
+// storage of 2000px (photos used to be saved at 2000px, quality 0.85).
+export const FULL_EDGE = 1600;
 export const THUMB_EDGE = 400;
 export const AI_EDGE = 1000;
+export const FULL_QUALITY = 0.8;
+export const THUMB_QUALITY = 0.8;
+export const AI_QUALITY = 0.8;
 
 export interface ProcessedPhoto {
   full: Blob;
@@ -181,21 +186,37 @@ export async function processPhoto(file: File): Promise<ProcessedPhoto> {
   const plan = (edge: number) => planDraw(natural, exif.orientation, handling, edge);
   const fullPlan = plan(FULL_EDGE);
   const [full, thumb, ai] = await Promise.all([
-    toJpeg(render(img, fullPlan), 0.85),
-    toJpeg(render(img, plan(THUMB_EDGE)), 0.8),
-    toJpeg(render(img, plan(AI_EDGE)), 0.8),
+    toJpeg(render(img, fullPlan), FULL_QUALITY),
+    toJpeg(render(img, plan(THUMB_EDGE)), THUMB_QUALITY),
+    toJpeg(render(img, plan(AI_EDGE)), AI_QUALITY),
   ]);
   return { full, thumb, ai, width: fullPlan.canvasWidth, height: fullPlan.canvasHeight, takenAt };
 }
 
 /** Turns an already-processed JPEG (no EXIF) a quarter turn clockwise. */
-export async function rotateJpeg(blob: Blob, quality = 0.85): Promise<{ blob: Blob; width: number; height: number }> {
+export async function rotateJpeg(blob: Blob, quality = FULL_QUALITY): Promise<{ blob: Blob; width: number; height: number }> {
   const img = await loadImage(blob);
   const plan = planDraw(
     { width: img.naturalWidth, height: img.naturalHeight },
     6,
     { sizeUpright: false, drawUpright: false },
     Number.MAX_SAFE_INTEGER,
+  );
+  return { blob: await toJpeg(render(img, plan), quality), width: plan.canvasWidth, height: plan.canvasHeight };
+}
+
+/** Re-saves an already-processed JPEG (no EXIF) at most `maxEdge` px on the long edge. */
+export async function shrinkJpeg(
+  blob: Blob,
+  maxEdge = FULL_EDGE,
+  quality = FULL_QUALITY,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  const img = await loadImage(blob);
+  const plan = planDraw(
+    { width: img.naturalWidth, height: img.naturalHeight },
+    1,
+    { sizeUpright: true, drawUpright: true },
+    maxEdge,
   );
   return { blob: await toJpeg(render(img, plan), quality), width: plan.canvasWidth, height: plan.canvasHeight };
 }

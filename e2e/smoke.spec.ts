@@ -86,7 +86,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   const viewer = page.getByRole('dialog', { name: 'Photo' });
   const big = viewer.getByAltText('Photo 1, full size');
   await expect(big).toBeVisible();
-  expect(await big.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1500, 2000]);
+  expect(await big.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1200, 1600]);
   await viewer.getByRole('button', { name: 'Close' }).click();
   await expect(viewer).toHaveCount(0);
 
@@ -107,7 +107,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
 
   // What was stored: upright portrait (red half on top), resized, no EXIF or GPS, date taken kept.
   const [photo] = await storedPhotos(page);
-  expect(photo?.size).toEqual([1500, 2000]);
+  expect(photo?.size).toEqual([1200, 1600]);
   expect(photo?.thumbSize).toEqual([300, 400]);
   expect(photo?.colours).toEqual({ top: 'r', bottom: 'b', left: expect.any(String), right: expect.any(String) });
   expect(photo?.hasExif).toBe(false);
@@ -142,7 +142,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   // Rotate: a quarter turn clockwise puts the red half on the right.
   await page.getByRole('button', { name: 'Rotate ↻' }).click();
   await expect(page.getByRole('button', { name: 'Rotate ↻' })).toBeEnabled();
-  await expect.poll(async () => (await storedPhotos(page))[0]?.size).toEqual([2000, 1500]);
+  await expect.poll(async () => (await storedPhotos(page))[0]?.size).toEqual([1600, 1200]);
   const [rotated] = await storedPhotos(page);
   expect(rotated?.thumbSize).toEqual([400, 300]);
   expect(rotated?.colours).toEqual({ top: expect.any(String), bottom: expect.any(String), left: 'b', right: 'r' });
@@ -224,7 +224,7 @@ test('set up, add an item with AI, browse, update, sell, hand down, back up and 
   await expect(backup.getByText(/✓ Restored 2 items/)).toBeVisible();
   await expect(page.getByText('sk-ant-api03…TEST')).toBeVisible(); // key kept
   const restored = await storedPhotos(page);
-  expect(restored.map((p) => p.size)).toEqual([[2000, 1500]]);
+  expect(restored.map((p) => p.size)).toEqual([[1600, 1200]]);
 
   // Works offline once loaded (service worker).
   await page.evaluate(() => navigator.serviceWorker.ready);
