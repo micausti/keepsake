@@ -39,15 +39,15 @@ type Scale = 'clothing' | 'shoes';
 const SCALES: Record<Scale, readonly SizeOption[]> = { clothing: CLOTHING_SIZES, shoes: SHOE_SIZES };
 
 /** The child's current size on a scale (clothing falls back to their age). */
-export function currentSize(child: Child, scale: Scale): string | undefined {
+export function currentSize(child: Child, scale: Scale, today = new Date()): string | undefined {
   if (scale === 'shoes') return child.shoeSize;
-  return child.clothingSize ?? (child.birthDate ? clothingSizeForAge(child.birthDate) : undefined);
+  return child.clothingSize ?? (child.birthDate ? clothingSizeForAge(child.birthDate, today) : undefined);
 }
 
 /** Current size and the one after it. */
-export function nowAndNext(child: Child, scale: Scale): SizeOption[] {
+export function nowAndNext(child: Child, scale: Scale, today = new Date()): SizeOption[] {
   const list = SCALES[scale];
-  const index = list.findIndex((s) => s.id === currentSize(child, scale));
+  const index = list.findIndex((s) => s.id === currentSize(child, scale, today));
   if (index === -1) return [];
   return list.slice(index, index + 2);
 }
@@ -76,12 +76,13 @@ export function computeGaps(
   items: Item[],
   targets: GapTargets,
   season?: Season,
+  today = new Date(),
 ): GapRow[] {
   const rows: GapRow[] = [];
   for (const category of GAP_CATEGORIES) {
     const target = targetFor(targets, category.id);
     if (target <= 0) continue;
-    const sizes = nowAndNext(child, category.sizeSystem as Scale);
+    const sizes = nowAndNext(child, category.sizeSystem as Scale, today);
     if (!sizes.length) continue;
     const inCategory = items.filter((i) => i.category === category.id && fitsSeason(i, season));
     const cells = sizes.map((size): GapCell => {
@@ -107,7 +108,7 @@ export interface HandDownSuggestion {
 }
 
 /** A sibling's outgrown or stored items that fit another child now or next. */
-export function handDownSuggestions(children: Child[], items: Item[]): HandDownSuggestion[] {
+export function handDownSuggestions(children: Child[], items: Item[], today = new Date()): HandDownSuggestion[] {
   const suggestions: HandDownSuggestion[] = [];
   for (const item of items) {
     if (!item.childId || !item.size || !PASSABLE.includes(item.status)) continue;
@@ -115,7 +116,7 @@ export function handDownSuggestions(children: Child[], items: Item[]): HandDownS
     if (system !== 'clothing' && system !== 'shoes') continue;
     for (const child of children) {
       if (child.id === item.childId) continue;
-      const [now, next] = nowAndNext(child, system);
+      const [now, next] = nowAndNext(child, system, today);
       if (now?.id === item.size) suggestions.push({ item, to: child, when: 'now' });
       else if (next?.id === item.size) suggestions.push({ item, to: child, when: 'next' });
     }
@@ -124,13 +125,13 @@ export function handDownSuggestions(children: Child[], items: Item[]): HandDownS
 }
 
 /** The child's items still marked "in use" in sizes smaller than they wear now. */
-export function likelyOutgrown(child: Child, items: Item[]): Item[] {
+export function likelyOutgrown(child: Child, items: Item[], today = new Date()): Item[] {
   return items.filter((item) => {
     if (item.childId !== child.id || item.status !== 'in_use' || !item.size) return false;
     const system = categoryById(item.category).sizeSystem;
     if (system !== 'clothing' && system !== 'shoes') return false;
     const list = SCALES[system];
-    const current = list.findIndex((s) => s.id === currentSize(child, system));
+    const current = list.findIndex((s) => s.id === currentSize(child, system, today));
     const own = list.findIndex((s) => s.id === item.size);
     return current !== -1 && own !== -1 && own < current;
   });

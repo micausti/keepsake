@@ -9,6 +9,7 @@ import {
   sizeLabel,
 } from '../../domain/sizes.ts';
 import { SizeSelect } from '../../ui/SizeSelect.tsx';
+import { localDateString, useToday } from '../../ui/today.ts';
 
 const EMPTY: ChildInput = { name: '', birthDate: '', clothingSize: '', shoeSize: '' };
 
@@ -27,8 +28,9 @@ function ChildForm({
   const adult = form.kind === 'adult';
   const [error, setError] = useState<string | null>(null);
   const set = (patch: Partial<ChildInput>) => setForm((f) => ({ ...f, ...patch }));
-  const today = new Date().toISOString().slice(0, 10);
-  const suggested = form.birthDate ? clothingSizeForAge(form.birthDate) : undefined;
+  const now = useToday();
+  const today = localDateString(now);
+  const suggested = form.birthDate ? clothingSizeForAge(form.birthDate, now) : undefined;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -101,6 +103,7 @@ function ChildForm({
 
 export function ChildrenSection({ items }: { items: Child[] }) {
   const [editing, setEditing] = useState<string | 'new-child' | 'new-adult' | null>(null);
+  const today = useToday();
 
   const remove = async (child: Child) => {
     const ok = window.confirm(
@@ -127,7 +130,7 @@ export function ChildrenSection({ items }: { items: Child[] }) {
                   {isAdult(child)
                     ? 'Adult'
                     : [
-                        child.birthDate && formatAge(child.birthDate),
+                        child.birthDate && formatAge(child.birthDate, today),
                         sizeLabel('clothing', child.clothingSize),
                         child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
                       ]

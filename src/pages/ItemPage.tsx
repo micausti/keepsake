@@ -21,6 +21,7 @@ import { childrenOnly, isAdult, type Child, type Item, type ItemEvent, type Phot
 import { BlobImage } from '../ui/BlobImage.tsx';
 import { Lightbox } from '../ui/Lightbox.tsx';
 import { hrefFor, itemHref, navigate } from '../ui/router.ts';
+import { useToday } from '../ui/today.ts';
 
 function eventTitle(event: ItemEvent, children: Child[]): string {
   const name = (id?: string) => children.find((c) => c.id === id)?.name ?? 'someone';
@@ -85,11 +86,12 @@ function PassTo({ item, children }: { item: Item; children: Child[] }) {
   const owner = children.find((c) => c.id === item.childId);
   const others = isAdult(owner) ? [] : childrenOnly(children).filter((c) => c.id !== item.childId);
   const [to, setTo] = useState('');
+  const today = useToday();
   if (!others.length || GONE_STATUSES.includes(item.status)) return null;
 
   const system = categoryById(item.category).sizeSystem;
   const fitsNow = (child: Child) =>
-    (system === 'clothing' || system === 'shoes') && nowAndNext(child, system)[0]?.id === item.size;
+    (system === 'clothing' || system === 'shoes') && nowAndNext(child, system, today)[0]?.id === item.size;
   const pass = async (child: Child) => {
     await handDown(item.id, child.id, fitsNow(child));
     setTo('');
