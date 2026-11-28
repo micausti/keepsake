@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
 import {
+  appUsage,
   formatBytes,
   getStorageStatus,
   requestPersistentStorage,
+  type AppUsage,
   type StorageStatus,
 } from '../../db/storage.ts';
 import { ShrinkPhotos } from './ShrinkPhotos.tsx';
 
 export function StorageSection() {
   const [status, setStatus] = useState<StorageStatus | null>(null);
+  const [usage, setUsage] = useState<AppUsage | null>(null);
   const [denied, setDenied] = useState(false);
 
-  useEffect(() => {
+  const refresh = () => {
     void getStorageStatus().then(setStatus);
-  }, []);
+    void appUsage().then(setUsage);
+  };
+  useEffect(refresh, []);
 
   const request = async () => {
     const granted = await requestPersistentStorage();
@@ -24,14 +29,19 @@ export function StorageSection() {
   return (
     <section className="card" aria-labelledby="storage-heading">
       <h2 id="storage-heading">Storage on this device</h2>
+      {usage && (
+        <p>
+          Keepsake is using {formatBytes(usage.bytes)} ({usage.photos} {usage.photos === 1 ? 'photo' : 'photos'},{' '}
+          {usage.items} {usage.items === 1 ? 'item' : 'items'}).
+        </p>
+      )}
       {!status ? null : !status.supported ? (
         <p className="muted">This browser doesn’t report storage details.</p>
       ) : (
         <>
-          <p>
-            Using {formatBytes(status.usageBytes)}
-            {status.quotaBytes ? ` of ${formatBytes(status.quotaBytes)} available` : ''}.
-          </p>
+          {status.quotaBytes ? (
+            <p className="muted">The phone lets Keepsake use up to {formatBytes(status.quotaBytes)}.</p>
+          ) : null}
           {status.persisted ? (
             <p className="success">✓ Protected: the browser won’t clear this data to free space.</p>
           ) : (
@@ -52,7 +62,7 @@ export function StorageSection() {
           )}
         </>
       )}
-      <ShrinkPhotos onChanged={() => void getStorageStatus().then(setStatus)} />
+      <ShrinkPhotos onChanged={refresh} />
       <p className="muted">
         Everything is stored only on this device. Keep a backup file too (see Backup above).
       </p>
