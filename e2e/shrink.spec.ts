@@ -52,6 +52,7 @@ test('photos saved at the old 2000px size can be made smaller', async ({ page })
   await page.reload();
 
   await expect(page.getByText(/1 photos are saved at the old, larger size/)).toBeVisible();
+  await expect(page.getByText(/^Keepsake is using [\d.]+ (KB|MB) \(1 photo, 0 items\)\.$/)).toBeVisible();
   await page.getByRole('button', { name: 'Make photos smaller' }).click();
   await expect(page.getByText(/✓ 1 photos made smaller/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Make photos smaller' })).toHaveCount(0);
