@@ -18,6 +18,7 @@ import { SEASONS, categoryById, type CategoryId, type Season } from '../domain/o
 import { sizeLabel } from '../domain/sizes.ts';
 import { childrenOnly, isAdult, type Child, type Item } from '../domain/types.ts';
 import { hrefFor, navigate } from '../ui/router.ts';
+import { useToday } from '../ui/today.ts';
 import { presetBrowse } from './BrowsePage.tsx';
 
 let rememberedSeason: Season | '' = '';
@@ -47,10 +48,11 @@ function Cell({ cell, category }: { cell: GapCell; category: CategoryId }) {
 }
 
 function ChildGaps({ child, items, targets, season }: { child: Child; items: Item[]; targets: GapTargets; season?: Season }) {
-  const rows = computeGaps(child, items, targets, season);
-  const outgrown = likelyOutgrown(child, items);
-  const clothes = nowAndNext(child, 'clothing');
-  const shoes = nowAndNext(child, 'shoes');
+  const today = useToday();
+  const rows = computeGaps(child, items, targets, season, today);
+  const outgrown = likelyOutgrown(child, items, today);
+  const clothes = nowAndNext(child, 'clothing', today);
+  const shoes = nowAndNext(child, 'shoes', today);
 
   const sweep = async () => {
     if (!window.confirm(`Mark ${outgrown.length} of ${child.name}’s smaller items as outgrown?`)) return;
@@ -119,7 +121,8 @@ function ChildGaps({ child, items, targets, season }: { child: Child; items: Ite
 }
 
 function HandMeDowns({ children, items }: { children: Child[]; items: Item[] }) {
-  const suggestions = handDownSuggestions(children, items);
+  const today = useToday();
+  const suggestions = handDownSuggestions(children, items, today);
   if (!suggestions.length) return null;
   const name = (id?: string) => children.find((c) => c.id === id)?.name;
   return (

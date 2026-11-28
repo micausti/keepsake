@@ -9,6 +9,7 @@ import { backupDue, daysSinceBackup } from '../backup/backup.ts';
 import { formatPence } from '../domain/money.ts';
 import { ItemRow } from '../ui/ItemRow.tsx';
 import { hrefFor } from '../ui/router.ts';
+import { useToday } from '../ui/today.ts';
 import { presetBrowse } from './BrowsePage.tsx';
 
 export function HomePage() {
@@ -16,6 +17,7 @@ export function HomePage() {
   const items = useLiveQuery(() => recentItems(5));
   const itemCount = useLiveQuery(() => db.items.count());
   const settings = useLiveQuery(() => getSettings());
+  const today = useToday();
   const selling = useLiveQuery(() =>
     db.items.where('status').anyOf('to_sell', 'listed', 'sold').toArray(),
   );
@@ -74,7 +76,7 @@ export function HomePage() {
                   {isAdult(child)
                     ? 'Adult'
                     : [
-                        child.birthDate && formatAge(child.birthDate),
+                        child.birthDate && formatAge(child.birthDate, today),
                         sizeLabel('clothing', child.clothingSize),
                         child.shoeSize && `Shoes ${sizeLabel('shoes', child.shoeSize)}`,
                       ]
