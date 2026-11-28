@@ -9,7 +9,7 @@ const decode = (s) => s.replaceAll('&#39;', "'").replaceAll('&quot;', '"').repla
 const csp = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/);
 if (!csp) failures.push('index.html has no Content-Security-Policy meta tag');
 else if (html.indexOf(csp[0]) > html.indexOf('<script')) failures.push('CSP meta tag must come before any script');
-else if (!decode(csp[1]).includes("connect-src 'self' https://api.anthropic.com;"))
+else if (!decode(csp[1]).includes("connect-src 'self' https://api.anthropic.com https://www.googleapis.com;"))
   failures.push(`unexpected connect-src in CSP: ${csp[1]}`);
 
 for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
